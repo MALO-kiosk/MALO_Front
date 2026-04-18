@@ -1,0 +1,24 @@
+.stage-viewport {
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0c0c0f;
+  overflow: hidden;
+}
+
+.stage-viewport__canvas {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(165deg, #16161c 0%, #0e0e12 45%, #12121a 100%);
+  color: #e8e6ef;
+  transform: scale(min(calc(100vw / var(--stage-w)), calc(100dvh / var(--stage-h))));
+  transform-origin: center center;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 24px 80px rgba(0, 0, 0, 0.55);
+}
