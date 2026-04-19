@@ -1,0 +1,46 @@
+/* EasyCartBar(bottom:150, height:297) 위 33px, 오른쪽 26px — 말풍선 |27px| person */
+.ai-speech-display {
+  position: absolute;
+  right: 26px;
+  bottom: calc(150px + 297px + 33px);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 27px;
+  z-index: 3;
+}
+
+.ai-speech-display__bubble {
+  display: flex;
+  width: 790px;
+  height: 96px;
+  padding: 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  border-radius: 65px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 4px 0 #4880ee;
+}
+
+.ai-speech-display__text {
+  margin: 0;
+  color: #000;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 38px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  text-align: center;
+}
+
+.ai-speech-display__person {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* EasyOption 등 카트바 없는 화면 — 위치만 재정의 */
+.ai-speech-display.ai-speech-display--easy-option {
+  bottom: 420px;
+}

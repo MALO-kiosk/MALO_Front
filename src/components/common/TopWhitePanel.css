@@ -1,0 +1,11 @@
+.top-white-panel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1080px;
+  box-sizing: border-box;
+  background: #fff;
+  box-shadow: 0 3px 8px 0 rgba(0, 0, 0, 0.03);
+  pointer-events: auto;
+  z-index: 1;
+}

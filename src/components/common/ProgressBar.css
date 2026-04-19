@@ -1,0 +1,83 @@
+/* 진행 바 상단: 라벨 행 + 15.47px 간격 + 926×19 트랙
+   바 상단이 스테이지 기준 173.47px이 되도록 섹션 top 보정 */
+.progress-section {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1080px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15.47px;
+  box-sizing: border-box;
+  top: calc(173.47px - 15.47px - 44px);
+  z-index: 3;
+}
+
+.progress-section__steps {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+  padding-left: 96px;
+  gap: 134px;
+  box-sizing: border-box;
+}
+
+.progress-section__label {
+  margin: 0;
+  flex-shrink: 0;
+  font-family: 'Pretendard', system-ui, sans-serif;
+  font-size: 37px;
+  font-style: normal;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.progress-section__label--menu {
+  color: #4880ee;
+  font-weight: 500;
+}
+
+.progress-section__label--earn {
+  width: 129px;
+  text-align: center;
+  color: #505050;
+  font-weight: 400;
+}
+
+.progress-section__label--pay {
+  width: 131px;
+  text-align: center;
+  color: #505050;
+  font-weight: 400;
+}
+
+.progress-section__label--done {
+  width: 130px;
+  text-align: center;
+  color: #505050;
+  font-weight: 400;
+}
+
+.progress-section__track {
+  position: relative;
+  width: 926px;
+  height: 19px;
+  box-sizing: border-box;
+  background: #e3e3e8;
+  border-radius: 20px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.progress-section__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 19px;
+  box-sizing: border-box;
+  border-radius: 22px;
+  background: #4880ee;
+}

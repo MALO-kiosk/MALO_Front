@@ -9,6 +9,8 @@ export type OutlineFrameProps = {
   variant: OutlineFrameVariant
   /** 생략 시 home: "처음으로", staff: "직원 호출" */
   label?: string
+  /** home 변형에서만 — 지정 시 처음 화면으로 이동 등 클릭 처리 */
+  onHomeClick?: () => void
   className?: string
   style?: CSSProperties
 }
@@ -16,6 +18,7 @@ export type OutlineFrameProps = {
 export function OutlineFrame({
   variant,
   label,
+  onHomeClick,
   className,
   style,
 }: OutlineFrameProps) {
@@ -32,20 +35,38 @@ export function OutlineFrame({
     .join(' ')
 
   if (variant === 'home') {
+    const inner = (
+      <div className="outline-frame__inner">
+        <img
+          src={homeIcon}
+          alt=""
+          className="outline-frame__icon outline-frame__icon--home"
+          width={30}
+          height={33}
+        />
+        <span className="outline-frame__label outline-frame__label--home">
+          {resolvedLabel}
+        </span>
+      </div>
+    )
+
+    if (onHomeClick) {
+      return (
+        <button
+          type="button"
+          className={rootClass}
+          style={style}
+          onClick={onHomeClick}
+          aria-label={resolvedLabel}
+        >
+          {inner}
+        </button>
+      )
+    }
+
     return (
       <div className={rootClass} style={style}>
-        <div className="outline-frame__inner">
-          <img
-            src={homeIcon}
-            alt=""
-            className="outline-frame__icon outline-frame__icon--home"
-            width={30}
-            height={33}
-          />
-          <span className="outline-frame__label outline-frame__label--home">
-            {resolvedLabel}
-          </span>
-        </div>
+        {inner}
       </div>
     )
   }

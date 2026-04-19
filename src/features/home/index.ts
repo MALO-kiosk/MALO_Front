@@ -1,1 +1,1 @@
-export { HomeScreen } from './HomeScreen'
+export { HomeScreen, type HomeScreenProps } from './HomeScreen'

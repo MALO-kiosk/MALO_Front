@@ -1,0 +1,33 @@
+.easy-option {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #f8f8f8;
+}
+
+.easy-option__back-frame {
+  position: absolute;
+  top: 19px;
+  left: 26px;
+  z-index: 2;
+}
+
+.easy-option__staff-frame {
+  position: absolute;
+  top: 23px;
+  right: 40px;
+  z-index: 2;
+}
+
+.easy-option__title {
+  margin: 160px 0 0;
+  padding: 0 24px;
+  box-sizing: border-box;
+  color: #000;
+  text-align: center;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 60px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}

@@ -1,0 +1,73 @@
+button.easy-menu {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+button.easy-menu:focus-visible {
+  outline: 2px solid #4880ee;
+  outline-offset: 4px;
+}
+
+.easy-menu {
+  position: absolute;
+  left: 30.02px;
+  top: 390px;
+  width: 323.908px;
+  height: 447.047px;
+  box-sizing: border-box;
+  border-radius: 10.708px;
+  background: #fff;
+  box-shadow: 0 0 12.046px 0 rgba(0, 0, 0, 0.06);
+}
+
+.easy-menu__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  height: 100%;
+  padding-top: 16.06px;
+}
+
+.easy-menu__image {
+  flex-shrink: 0;
+  width: 244.172px;
+  height: 329.423px;
+  aspect-ratio: 63 / 85;
+  background-color: lightgray;
+  background-position: 50%;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.easy-menu__name {
+  margin: 13.22px 0 0;
+  padding: 0;
+  width: 100%;
+  color: #424242;
+  text-align: center;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 26.769px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+
+.easy-menu__price {
+  margin: 5.48px 0 0;
+  padding: 0;
+  width: 100%;
+  color: #424242;
+  text-align: center;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 25.431px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}

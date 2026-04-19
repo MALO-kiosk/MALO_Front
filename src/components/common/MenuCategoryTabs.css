@@ -1,0 +1,102 @@
+.menu-category-section {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  padding: 220px 0 0 73px;
+  box-sizing: border-box;
+}
+
+/* 상세 탭(선택 박스 상단) = 스테이지·화이트 카드 맨 위 기준 309px */
+.menu-category-section:has(.coffee-detail-tabs) {
+  min-height: calc(309px + 59px);
+}
+
+.menu-category-tabs {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
+  box-sizing: border-box;
+}
+
+.coffee-detail-tabs {
+  position: absolute;
+  left: 73px;
+  top: 309px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.coffee-detail-tabs__btn {
+  box-sizing: border-box;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 39px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  color: #424242;
+}
+
+.coffee-detail-tabs__btn--active {
+  display: flex;
+  min-width: 121px;
+  height: 59px;
+  padding: 0 16px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 32px;
+  background: #313131;
+  color: #fff;
+}
+
+.coffee-detail-tabs__label {
+  white-space: nowrap;
+}
+
+.menu-category-tabs__tab {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 38px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  color: #3b3b3b;
+}
+
+.menu-category-tabs__tab--dessert-default:not(.menu-category-tabs__tab--active) {
+  color: #000;
+  font-weight: 400;
+}
+
+.menu-category-tabs__tab--active {
+  color: #4880ee;
+  font-weight: 600;
+}
+
+.menu-category-tabs__label {
+  white-space: nowrap;
+}
+
+.menu-category-tabs__tab--active::after {
+  content: '';
+  margin-top: 17px;
+  width: calc(100% + 24px);
+  height: 4px;
+  flex-shrink: 0;
+  background: #4880ee;
+}

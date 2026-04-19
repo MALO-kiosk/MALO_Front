@@ -16,3 +16,93 @@
   top: 23px;
   right: 40px;
 }
+
+.home-screen__addimg {
+  position: absolute;
+  top: 108px;
+  left: 0;
+  display: block;
+  width: 1080px;
+  height: 1344px;
+  aspect-ratio: 45 / 56;
+}
+
+/* 이미지 하단 + 108px, 스테이지 가로 가운데 */
+.home-screen__bar {
+  position: absolute;
+  top: calc(23px + 1344px + 108px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 996px;
+  height: 64px;
+  box-sizing: border-box;
+  border-radius: 50px;
+  border: 1px solid #000;
+  background: transparent;
+}
+
+.home-screen__bar-text {
+  margin: 0;
+  text-align: center;
+  color: #000;
+  font-family: 'Pretendard', system-ui, sans-serif;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+/* 안내 막대(.home-screen__bar) 아래 23px */
+.home-screen__tile-btn {
+  position: absolute;
+  top: calc(23px + 1344px + 108px + 64px + 23px);
+  width: 533px;
+  height: 358px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.home-screen__tile-btn--dinein {
+  left: 0;
+  background: #898990;
+}
+
+/* 첫 버튼(533px) + 16px */
+.home-screen__tile-btn--takeout {
+  left: calc(533px + 16px);
+  background: #4880ee;
+}
+
+.home-screen__tile-btn-row {
+  position: absolute;
+  left: 172px;
+  top: 141.5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.home-screen__tile-btn-icon {
+  width: 65px;
+  height: 65px;
+  aspect-ratio: 1 / 1;
+  display: block;
+  flex-shrink: 0;
+}
+
+.home-screen__tile-btn-label {
+  color: #fff;
+  font-family: 'Pretendard', system-ui, sans-serif;
+  font-size: 64px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}

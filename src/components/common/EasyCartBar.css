@@ -1,0 +1,206 @@
+.easy-cart-bar {
+  position: absolute;
+  left: 0;
+  bottom: 150px;
+  width: 1080px;
+  height: 297px;
+  box-sizing: border-box;
+  background: #fff;
+  box-shadow: 0 -9px 19.9px 0 rgba(0, 0, 0, 0.04);
+  z-index: 2;
+}
+
+/* 카트 패널 내부 좌표계 — 규칙선·스크롤 목록·커스텀 스크롤바는 모두 여기 기준 */
+.easy-cart-bar__surface {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* 박스 위쪽 가장자리에서 27px — 1013×1 #656666 */
+.easy-cart-bar__rule {
+  position: absolute;
+  top: 27px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1013px;
+  height: 0;
+  margin: 0;
+  border: none;
+  border-top: 1px solid #656666;
+}
+
+/* 선 아래 4.68px, 목록 왼쪽 26px — 커스텀 스크롤바(7px, 오른쪽 19px) 영역 확보 */
+.easy-cart-bar__body {
+  position: absolute;
+  top: calc(27px + 1px + 4.68px);
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  padding-left: 26px;
+  padding-right: 52px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.easy-cart-bar__body::-webkit-scrollbar {
+  display: none;
+}
+
+/* 카트바 기준 오른쪽 19px·위 28px — 트랙 7×212 / 썸 7×123 */
+.easy-cart-bar__scrollbar {
+  position: absolute;
+  top: 28px;
+  right: 19px;
+  width: 7px;
+  height: 212px;
+  z-index: 4;
+}
+
+.easy-cart-bar__scrollbar-track {
+  position: relative;
+  width: 7px;
+  height: 212px;
+  border-radius: 10px;
+  background: #f0eeee;
+}
+
+.easy-cart-bar__scrollbar-thumb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7px;
+  height: 123px;
+  border-radius: 10px;
+  background: #656666;
+  cursor: grab;
+  touch-action: none;
+}
+
+.easy-cart-bar__scrollbar-thumb:active {
+  cursor: grabbing;
+}
+
+.easy-cart-bar__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.easy-cart-bar__row {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-height: 74px;
+  margin-bottom: 12px;
+}
+
+.easy-cart-bar__row:last-child {
+  margin-bottom: 0;
+}
+
+.easy-cart-bar__lead {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 25.49px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: calc(520.09px - 26px);
+}
+
+.easy-cart-bar__thumb {
+  flex-shrink: 0;
+  width: 73.645px;
+  height: 73.645px;
+  border-radius: 73.645px;
+  background-color: lightgray;
+  background-position: 50%;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.easy-cart-bar__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+  padding: 0;
+  color: #424242;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 45.32px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 카트바 왼쪽 기준 520.09px — body 좌패딩 26px 보정 */
+.easy-cart-bar__controls {
+  position: absolute;
+  left: calc(520.09px - 26px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.easy-cart-bar__icon-btn {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.easy-cart-bar__icon-btn:focus-visible {
+  outline: 2px solid #4880ee;
+  outline-offset: 4px;
+}
+
+.easy-cart-bar__icon-btn img {
+  display: block;
+}
+
+.easy-cart-bar__qty-val {
+  margin-left: 24.96px;
+  color: #424242;
+  text-align: center;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 40px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  min-width: 1.5ch;
+}
+
+.easy-cart-bar__icon-btn--plus {
+  margin-left: 24.96px;
+}
+
+.easy-cart-bar__line-price {
+  margin-left: 111px;
+  color: #424242;
+  text-align: center;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 40px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.easy-cart-bar__icon-btn--remove {
+  margin-left: 9px;
+}

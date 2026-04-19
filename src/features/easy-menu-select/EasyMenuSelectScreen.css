@@ -1,0 +1,22 @@
+.easy-menu-select {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #f8f8f8;
+}
+
+/* HomeScreen / ModeSelect와 동일한 OutlineFrame 위치 */
+.easy-menu-select__back-frame {
+  position: absolute;
+  top: 19px;
+  left: 26px;
+  z-index: 2;
+}
+
+.easy-menu-select__staff-frame {
+  position: absolute;
+  top: 23px;
+  right: 40px;
+  z-index: 2;
+}
+

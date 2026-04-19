@@ -7,6 +7,15 @@
   background: transparent;
 }
 
+button.outline-frame {
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+
 .outline-frame--home .outline-frame__inner {
   display: flex;
   flex-direction: row;
