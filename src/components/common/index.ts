@@ -14,6 +14,10 @@ export {
   EasyCartBarTotal,
   type EasyCartBarTotalProps,
 } from './EasyCartBarTotal'
+export {
+  EasyOrderActionBar,
+  type EasyOrderActionBarProps,
+} from './EasyOrderActionBar'
 export { EasyMenu, type EasyMenuProps } from './EasyMenu'
 export { OrderTotalBar, type OrderTotalBarProps } from './OrderTotalBar'
 export { ProgressBar, type ProgressBarProps } from './ProgressBar'

@@ -39,8 +39,3 @@
   display: block;
   flex-shrink: 0;
 }
-
-/* EasyOption 등 카트바 없는 화면 — 위치만 재정의 */
-.ai-speech-display.ai-speech-display--easy-option {
-  bottom: 420px;
-}

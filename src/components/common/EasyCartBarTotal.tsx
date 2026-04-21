@@ -10,10 +10,14 @@ export type EasyCartBarTotalProps = {
   imageSrc?: string
   /** 메뉴 이름 */
   menuName?: string
-  /** 표시 금액 문자열 */
-  totalPriceLabel?: string
+  /** 온도·사이즈 등 한 줄 요약 (이름 아래 8px) */
+  menuSpec?: string
+  /** 선택 메뉴 단가(원) — 표시값은 단가 × 수량 */
+  unitPriceWon?: number
   /** 초기 수량 */
   initialQuantity?: number
+  /** 옵션 등 추가 금액(원) — 표시: +n원 */
+  additionalAmountWon?: number
   className?: string
   style?: CSSProperties
 }
@@ -21,14 +25,20 @@ export type EasyCartBarTotalProps = {
 export function EasyCartBarTotal({
   imageSrc = defaultMenuImage,
   menuName = '스트로베리말차',
-  totalPriceLabel = '3,700 원',
+  menuSpec = 'ICE / R',
+  unitPriceWon = 3900,
   initialQuantity = 1,
+  additionalAmountWon = 0,
   className,
   style,
 }: EasyCartBarTotalProps) {
   const [qty, setQty] = useState(initialQuantity)
 
   const imgUrl = imageSrc ?? defaultMenuImage
+  const lineTotalWon = unitPriceWon * qty + additionalAmountWon
+  const priceDigits = lineTotalWon.toLocaleString('ko-KR')
+  const addonDigits = additionalAmountWon.toLocaleString('ko-KR')
+  const addonLabel = `추가 금액 +${addonDigits}원`
 
   const rootClass = ['easy-cart-bar-total', className].filter(Boolean).join(' ')
 
@@ -49,6 +59,7 @@ export function EasyCartBarTotal({
         </div>
 
         <p className="easy-cart-bar-total__name">{menuName}</p>
+        <p className="easy-cart-bar-total__spec">{menuSpec}</p>
 
         <div className="easy-cart-bar-total__qty">
           <button
@@ -69,9 +80,20 @@ export function EasyCartBarTotal({
             <img src={plusIcon} alt="" width={51} height={51} />
           </button>
         </div>
-      </div>
 
-      <p className="easy-cart-bar-total__price">{totalPriceLabel}</p>
+        <p className="easy-cart-bar-total__addon-amt" aria-label={addonLabel}>
+          {addonLabel}
+        </p>
+
+        <div
+          className="easy-cart-bar-total__price-row"
+          aria-label={`금액 ${priceDigits} 원 (추가 옵션 포함)`}
+        >
+          <span className="easy-cart-bar-total__amt-label">금액</span>
+          <span className="easy-cart-bar-total__amt-num">{priceDigits}</span>
+          <span className="easy-cart-bar-total__won">원</span>
+        </div>
+      </div>
     </aside>
   )
 }

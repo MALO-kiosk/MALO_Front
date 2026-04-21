@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { StageViewport } from '@/components/layout'
 import { CommonMenuSelectScreen } from '@/features/common-menu-select'
 import { EasyMenuSelectScreen } from '@/features/easy-menu-select'
+import { EasyCustomOptionScreen } from '@/features/easy-custom-option'
 import { EasyOptionScreen } from '@/features/easy-option'
 import { HomeScreen } from '@/features/home'
 import { ModeSelectScreen } from '@/features/mode-select'
@@ -11,6 +12,7 @@ type AppPage =
   | 'mode-select'
   | 'easy-menu-select'
   | 'easy-option'
+  | 'easy-custom-option'
   | 'common-menu-select'
 
 export default function App() {
@@ -32,7 +34,18 @@ export default function App() {
           onOrder={() => setPage('easy-option')}
         />
       ) : page === 'easy-option' ? (
-        <EasyOptionScreen onGoHome={() => setPage('home')} />
+        <EasyOptionScreen
+          onGoHome={() => setPage('home')}
+          onCancelOrder={() => setPage('easy-menu-select')}
+          onAddMenu={() => setPage('easy-menu-select')}
+          onOpenCustomOption={() => setPage('easy-custom-option')}
+        />
+      ) : page === 'easy-custom-option' ? (
+        <EasyCustomOptionScreen
+          onGoHome={() => setPage('home')}
+          onCancelOrder={() => setPage('easy-menu-select')}
+          onAddMenu={() => setPage('easy-menu-select')}
+        />
       ) : (
         <CommonMenuSelectScreen onGoHome={() => setPage('home')} />
       )}

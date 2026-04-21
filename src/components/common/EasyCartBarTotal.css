@@ -17,6 +17,8 @@
   width: 100%;
   height: 100%;
   box-sizing: border-box;
+  /* 추가 금액 줄 기준 — 금액 행 top 연동 */
+  --easy-cart-addon-top: calc(47px + 37px + 13px + 43px + 6px);
 }
 
 .easy-cart-bar-total__image {
@@ -73,6 +75,21 @@
   line-height: normal;
 }
 
+.easy-cart-bar-total__spec {
+  position: absolute;
+  left: 281px;
+  top: calc(47px + 37px + 13px + 43px + 8px);
+  margin: 0;
+  padding: 0;
+  color: #848484;
+  text-align: center;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 25px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
 .easy-cart-bar-total__qty {
   position: absolute;
   left: calc(39px + 193px + 52px);
@@ -109,20 +126,55 @@
   text-align: center;
 }
 
-/* 흰 패널(297px) 아래 193px · 왼쪽 53px */
-.easy-cart-bar-total__price {
+/* 추가 금액 아래 5px, 오른쪽 50px — 금액 · 숫자 · 원 */
+.easy-cart-bar-total__price-row {
   position: absolute;
-  top: calc(100% + 193px);
-  left: 53px;
+  right: 50px;
+  /* 추가 금액(29px) 줄 박스 높이 ≈34px + 간격 5px */
+  top: calc(var(--easy-cart-addon-top) + 34px + 5px);
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.easy-cart-bar-total__amt-label,
+.easy-cart-bar-total__amt-num,
+.easy-cart-bar-total__won {
+  position: static;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   color: #000;
-  text-align: left;
   font-family: Pretendard, system-ui, sans-serif;
   font-size: 50px;
   font-style: normal;
   font-weight: 400;
   line-height: normal;
-  white-space: nowrap;
+}
+
+.easy-cart-bar-total__amt-num {
+  text-align: right;
+}
+
+/* __surface 기준 — 오른쪽 열은 수량(왼쪽)과 가로로 안 겹침, 세로는 ICE/R 대역 아래·수량줄 위로 크게 올림 */
+.easy-cart-bar-total__addon-amt {
+  position: absolute;
+  right: 53px;
+  z-index: 1;
+  top: var(--easy-cart-addon-top);
+  margin: 0;
+  padding: 0;
+  color: #848484;
+  text-align: center;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 29px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
 }

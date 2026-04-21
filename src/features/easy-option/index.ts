@@ -1,1 +1,5 @@
-export { EasyOptionScreen, type EasyOptionScreenProps } from './EasyOptionScreen'
+export {
+  EasyOptionScreen,
+  cartSummarySpec,
+  type EasyOptionScreenProps,
+} from './EasyOptionScreen'

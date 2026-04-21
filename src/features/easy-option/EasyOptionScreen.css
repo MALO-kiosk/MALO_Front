@@ -31,3 +31,134 @@
   font-weight: 500;
   line-height: normal;
 }
+
+/* TopWhitePanel heightPx와 동일 — 패널 하단 기준 간격 */
+.easy-option__temp-label,
+.easy-option__size-label,
+.easy-option__cup-label {
+  position: absolute;
+  left: 68px;
+  z-index: 2;
+  margin: 0;
+  color: #000;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 53px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.easy-option__temp-label {
+  top: calc(269px + 59px);
+}
+
+/* ICE 박스 하단에서 43px 아래에 사이즈 라벨 */
+.easy-option__size-label {
+  top: calc(269px + 153px + 105px + 43px);
+}
+
+.easy-option__temp-row,
+.easy-option__size-row,
+.easy-option__cup-row {
+  position: absolute;
+  left: 81px;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+
+.easy-option__temp-row {
+  top: calc(269px + 153px);
+}
+
+/* 온도 블록과 동일: 라벨 top(422−328)과 버튼 행 간 94px */
+.easy-option__size-row {
+  top: calc(269px + 153px + 105px + 43px + 94px);
+}
+
+/* Regular 박스 하단에서 43px 아래에 컵선택 라벨 — 사이즈 블록과 동일 패턴 */
+.easy-option__cup-label {
+  top: calc(269px + 153px + 105px + 43px + 94px + 105px + 43px);
+}
+
+.easy-option__cup-row {
+  top: calc(269px + 153px + 105px + 43px + 94px + 105px + 43px + 94px);
+}
+
+.easy-option__temp-btn {
+  box-sizing: border-box;
+  width: 452px;
+  height: 105px;
+  padding: 0;
+  border-radius: 52px;
+  cursor: pointer;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 64px;
+  font-style: normal;
+  line-height: normal;
+  text-align: center;
+}
+
+.easy-option__temp-btn--selected {
+  border: none;
+  background: #4880ee;
+  color: #fff;
+  font-weight: 500;
+}
+
+.easy-option__temp-btn--unselected {
+  border: 2px solid #515151;
+  background: #fff;
+  color: #505050;
+  font-weight: 400;
+}
+
+/* 머그컵 버튼 하단 + 77px, 가로 가운데 */
+.easy-option__custom-btn {
+  position: absolute;
+  left: 50%;
+  top: calc(
+    269px + 153px + 105px + 43px + 94px + 105px + 43px + 94px + 105px + 77px
+  );
+  z-index: 2;
+  box-sizing: border-box;
+  width: 914px;
+  height: 123px;
+  transform: translateX(-50%);
+  padding: 0;
+  border: none;
+  border-radius: 52px;
+  background: #4880ee;
+  cursor: pointer;
+  color: #fff;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 64px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  text-align: center;
+}
+
+/* 맞춤 옵션 버튼 하단 + 7px — 화면 맨 오른쪽에서 86px 띈 위치에 텍스트 블록 끝 정렬 */
+.easy-option__custom-hint {
+  position: absolute;
+  top: calc(
+    269px + 153px + 105px + 43px + 94px + 105px + 43px + 94px + 105px + 77px +
+      123px + 7px
+  );
+  right: 86px;
+  left: auto;
+  width: max-content;
+  max-width: calc(100% - 86px);
+  z-index: 2;
+  margin: 0;
+  color: #3c3c3c;
+  text-align: center;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 36px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}

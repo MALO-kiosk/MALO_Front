@@ -1,0 +1,52 @@
+.easy-order-action-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  /* 메뉴담기/주문취소 버튼 위로 48px 간격 */
+  height: calc(151px + 48px);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 48px 0 0;
+  pointer-events: none;
+}
+
+.easy-order-action-bar__cancel,
+.easy-order-action-bar__add {
+  position: absolute;
+  bottom: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  pointer-events: auto;
+  color: #fff;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 59px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  text-align: center;
+}
+
+.easy-order-action-bar__cancel {
+  left: 0;
+  width: 547px;
+  height: 151px;
+  background: #656666;
+}
+
+.easy-order-action-bar__add {
+  right: 0;
+  width: 533px;
+  height: 151px;
+  background: #4880ee;
+}
+
+.easy-order-action-bar__cancel:focus-visible,
+.easy-order-action-bar__add:focus-visible {
+  outline: 2px solid #4880ee;
+  outline-offset: 2px;
+}

@@ -1,0 +1,331 @@
+.easy-custom-option__shot-label {
+  position: absolute;
+  left: 68px;
+  top: 328px;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  color: #000;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 53px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.easy-custom-option__shot-addon {
+  position: absolute;
+  left: 87px;
+  top: 424px;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 375px;
+  height: 56px;
+  margin: 0;
+  padding: 0;
+  color: #000;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: normal;
+}
+
+/* minus — 오른쪽 192.3px · 위 423px; − / 숫자 / + 간격 23.6px */
+.easy-custom-option__shot-qty {
+  position: absolute;
+  right: 192.3px;
+  top: 423px;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 23.6px;
+  margin: 0;
+  padding: 0;
+}
+
+.easy-custom-option__shot-qty-btn {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.easy-custom-option__shot-qty-btn:focus-visible {
+  outline: 2px solid #4880ee;
+  outline-offset: 4px;
+}
+
+.easy-custom-option__shot-qty-val {
+  margin: 0;
+  padding: 0;
+  min-width: 1ch;
+  color: #424242;
+  text-align: center;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 35.962px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+/*
+ * ‘샷 추가 +500원’(top 424, height 56 → 하단 480) 기준 아래 68px → ‘시럽’ top 548
+ * 샷 블록과 동일 간격: 라벨→추가금 96px, 수량은 추가금보다 1px 위
+ */
+.easy-custom-option__syrup-label {
+  position: absolute;
+  left: 68px;
+  top: 548px;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  color: #000;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 53px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.easy-custom-option__syrup-addon {
+  position: absolute;
+  left: 68px;
+  top: 644px;
+  z-index: 2;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 480px;
+  height: 56px;
+  margin: 0;
+  padding: 0;
+  color: #000;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.easy-custom-option__syrup-qty {
+  position: absolute;
+  right: 192.3px;
+  top: 643px;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 23.6px;
+  margin: 0;
+  padding: 0;
+}
+
+.easy-custom-option__sweetness-label {
+  position: absolute;
+  left: 67px;
+  top: 764px;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  color: #000;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 53px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.easy-custom-option__sweetness-option {
+  position: absolute;
+  left: 80px;
+  top: 862px;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 296px;
+  height: 93px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 52px;
+  background: #4880ee;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.easy-custom-option__sweetness-option:focus-visible {
+  outline: 2px solid #2d5ac4;
+  outline-offset: 4px;
+}
+
+.easy-custom-option__sweetness-option-text {
+  display: block;
+  width: 143px;
+  margin: 0;
+  padding: 0;
+  color: #fff;
+  text-align: center;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+
+/* ‘더 달게’ 오른쪽 15px — 테두리형 */
+.easy-custom-option__sweetness-option-outline {
+  position: absolute;
+  left: calc(80px + 296px + 15px);
+  top: 862px;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 296px;
+  height: 93px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #505050;
+  border-radius: 52px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.easy-custom-option__sweetness-option-outline:focus-visible {
+  outline: 2px solid #4880ee;
+  outline-offset: 4px;
+}
+
+.easy-custom-option__sweetness-option-outline-text {
+  display: block;
+  width: 87px;
+  margin: 0;
+  padding: 0;
+  color: #505050;
+  text-align: center;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+
+.easy-custom-option__sweetness-option-outline--lessSweet {
+  left: calc(80px + 296px + 15px + 296px + 15px);
+}
+
+.easy-custom-option__sweetness-option-outline-text--fluid {
+  width: max-content;
+  max-width: 220px;
+}
+
+/* 덜 달게 버튼(top 862, height 93) 아래 38px */
+.easy-custom-option__pearl-label {
+  position: absolute;
+  left: 67px;
+  top: calc(862px + 93px + 38px);
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  color: #000;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 53px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.easy-custom-option__pearl-addon {
+  position: absolute;
+  left: 86px;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 375px;
+  height: 66px;
+  margin: 0;
+  padding: 0;
+  color: #000;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: normal;
+}
+
+.easy-custom-option__pearl-addon--r0 {
+  top: 1078px;
+}
+
+/* 이전 행(텍스트 66px) + 간격 11px */
+.easy-custom-option__pearl-addon--r1 {
+  top: calc(1078px + 66px + 11px);
+}
+
+.easy-custom-option__pearl-addon--r2 {
+  top: calc(1078px + (66px + 11px) * 2);
+}
+
+/* 플러스 아이콘 오른쪽 기준 72.5px — − / 1 / + 간격 24.09px */
+.easy-custom-option__pearl-qty {
+  position: absolute;
+  right: 72.5px;
+  left: auto;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24.09px;
+  margin: 0;
+  padding: 0;
+}
+
+.easy-custom-option__pearl-qty--r0 {
+  top: 1078px;
+}
+
+.easy-custom-option__pearl-qty--r1 {
+  top: calc(1078px + 66px + 11px);
+}
+
+.easy-custom-option__pearl-qty--r2 {
+  top: calc(1078px + (66px + 11px) * 2);
+}
+
+.easy-custom-option__pearl-qty-btn {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.easy-custom-option__pearl-qty-btn:focus-visible {
+  outline: 2px solid #4880ee;
+  outline-offset: 4px;
+}
+
+.easy-custom-option__pearl-qty-val {
+  margin: 0;
+  padding: 0;
+  min-width: 1ch;
+  color: #424242;
+  text-align: center;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 36.713px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
