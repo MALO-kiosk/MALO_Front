@@ -1,0 +1,24 @@
+.common-menu-bottom-panel {
+  position: absolute;
+  bottom: 151px;
+  left: 0;
+  width: 1080px;
+  height: 364px;
+  box-sizing: border-box;
+  background: #fff;
+  box-shadow: 0 -9px 19.9px 0 rgba(0, 0, 0, 0.04);
+  z-index: 2;
+}
+
+/* 패널 상단에서 95px — 1013×1 #656666 */
+.common-menu-bottom-panel__rule {
+  position: absolute;
+  top: 95px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1013px;
+  height: 0;
+  margin: 0;
+  border: none;
+  border-top: 1px solid #656666;
+}

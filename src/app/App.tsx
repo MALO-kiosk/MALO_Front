@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { StageViewport } from '@/components/layout'
+import { CommonOptionScreen } from '@/features/common-option'
 import { CommonMenuSelectScreen } from '@/features/common-menu-select'
 import { EasyMenuSelectScreen } from '@/features/easy-menu-select'
+import { CommonCustomOptionScreen } from '@/features/common-custom-option'
 import { EasyCustomOptionScreen } from '@/features/easy-custom-option'
 import { EasyOptionScreen } from '@/features/easy-option'
 import { HomeScreen } from '@/features/home'
@@ -14,9 +16,16 @@ type AppPage =
   | 'easy-option'
   | 'easy-custom-option'
   | 'common-menu-select'
+  | 'common-option'
+  | 'common-custom-option'
 
 export default function App() {
   const [page, setPage] = useState<AppPage>('home')
+  /** 맞춤 옵션 화면에서 주문취소·메뉴담기 복귀 경로 */
+  const customOptionReturnPage = useRef<Extract<
+    AppPage,
+    'easy-menu-select' | 'common-option'
+  >>('easy-menu-select')
 
   return (
     <StageViewport>
@@ -38,16 +47,35 @@ export default function App() {
           onGoHome={() => setPage('home')}
           onCancelOrder={() => setPage('easy-menu-select')}
           onAddMenu={() => setPage('easy-menu-select')}
-          onOpenCustomOption={() => setPage('easy-custom-option')}
+          onOpenCustomOption={() => {
+            customOptionReturnPage.current = 'easy-menu-select'
+            setPage('easy-custom-option')
+          }}
         />
       ) : page === 'easy-custom-option' ? (
         <EasyCustomOptionScreen
           onGoHome={() => setPage('home')}
-          onCancelOrder={() => setPage('easy-menu-select')}
-          onAddMenu={() => setPage('easy-menu-select')}
+          onCancelOrder={() => setPage(customOptionReturnPage.current)}
+          onAddMenu={() => setPage(customOptionReturnPage.current)}
+        />
+      ) : page === 'common-custom-option' ? (
+        <CommonCustomOptionScreen
+          onGoHome={() => setPage('home')}
+          onCancelOrder={() => setPage('common-option')}
+          onAddMenu={() => setPage('common-option')}
+        />
+      ) : page === 'common-menu-select' ? (
+        <CommonMenuSelectScreen
+          onGoHome={() => setPage('home')}
+          onOrder={() => setPage('common-option')}
         />
       ) : (
-        <CommonMenuSelectScreen onGoHome={() => setPage('home')} />
+        <CommonOptionScreen
+          onGoHome={() => setPage('home')}
+          onCancelOrder={() => setPage('common-menu-select')}
+          onAddMenu={() => setPage('common-menu-select')}
+          onOpenCustomOption={() => setPage('common-custom-option')}
+        />
       )}
     </StageViewport>
   )

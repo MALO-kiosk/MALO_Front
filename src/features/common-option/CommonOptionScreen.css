@@ -1,0 +1,189 @@
+.common-option {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #f8f8f8;
+}
+
+.common-option__back-frame {
+  position: absolute;
+  top: 19px;
+  left: 26px;
+  z-index: 2;
+}
+
+.common-option__staff-frame {
+  position: absolute;
+  top: 23px;
+  right: 40px;
+  z-index: 2;
+}
+
+.common-option__title {
+  margin: 160px 0 0;
+  padding: 0 24px;
+  box-sizing: border-box;
+  color: #000;
+  text-align: center;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 60px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+
+/* 온도 / 사이즈 / 컵선택 — 라벨: 왼쪽 68px, 버튼행: 라벨(45px) 아래 40px, 블록 간 75px */
+.common-option__field-label {
+  position: absolute;
+  left: 68px;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  color: #000;
+  text-align: left;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 45px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.common-option__field-label--temp {
+  top: 328px;
+}
+
+/* 첫 버튼행 하단(486px) + 75px */
+.common-option__field-label--size {
+  top: calc(328px + 45px + 40px + 73px + 75px);
+}
+
+.common-option__field-label--cup {
+  top: calc(
+    328px + 45px + 40px + 73px + 75px + 45px + 40px + 73px + 75px
+  );
+}
+
+.common-option__field-row {
+  position: absolute;
+  right: 81px;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+
+.common-option__field-row--temp {
+  top: calc(328px + 45px + 40px);
+}
+
+.common-option__field-row--size {
+  top: calc(
+    328px + 45px + 40px + 73px + 75px + 45px + 40px
+  );
+}
+
+.common-option__field-row--cup {
+  top: calc(
+    328px + 45px + 40px + 73px + 75px + 45px + 40px + 73px + 75px + 45px +
+      40px
+  );
+}
+
+.common-option__temp-btn {
+  box-sizing: border-box;
+  width: 452px;
+  height: 73px;
+  padding: 0;
+  margin: 0;
+  border-radius: 52px;
+  cursor: pointer;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-style: normal;
+  line-height: normal;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.common-option__temp-btn--selected {
+  border: none;
+  background: #4880ee;
+  color: #fff;
+  font-size: 40px;
+  font-weight: 500;
+}
+
+.common-option__temp-btn--unselected {
+  border: 2px solid #515151;
+  background: #fff;
+  color: #505050;
+  font-size: 35px;
+  font-weight: 400;
+}
+
+.common-option__temp-btn:focus-visible {
+  outline: 2px solid #4880ee;
+  outline-offset: 3px;
+}
+
+/* 컵선택 버튼행(73px) 아래 114px — 가로 가운데 */
+.common-option__custom-btn {
+  position: absolute;
+  left: 50%;
+  top: calc(
+    328px + 45px + 40px + 73px + 75px + 45px + 40px + 73px + 75px + 45px +
+      40px + 73px + 114px
+  );
+  z-index: 2;
+  box-sizing: border-box;
+  width: 914px;
+  height: 93px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 55px;
+  transform: translateX(-50%);
+  background: #4880ee;
+  cursor: pointer;
+  color: #fff;
+  text-align: center;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 45px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.common-option__custom-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* 맞춤 옵션 버튼(93px) 아래 13px, 오른쪽 102px */
+.common-option__custom-hint {
+  position: absolute;
+  top: calc(
+    328px + 45px + 40px + 73px + 75px + 45px + 40px + 73px + 75px + 45px +
+      40px + 73px + 114px + 93px + 13px
+  );
+  right: 102px;
+  left: auto;
+  z-index: 2;
+  width: max-content;
+  max-width: calc(100% - 102px);
+  margin: 0;
+  padding: 0;
+  color: #3c3c3c;
+  text-align: center;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}

@@ -1,0 +1,130 @@
+.common-menu-bottom-cart-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  box-sizing: border-box;
+  padding: 22.18px 0 0 30px;
+}
+
+.common-menu-bottom-cart-row__thumb {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 52px;
+  box-sizing: border-box;
+  background-color: lightgray;
+  background-position: 50%;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.common-menu-bottom-cart-row__name {
+  flex-shrink: 0;
+  width: 340px;
+  margin: 0 0 0 18px;
+  padding: 0;
+  color: #424242;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.common-menu-bottom-cart-row__icon-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  width: 45px;
+  height: 45px;
+  padding: 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.common-menu-bottom-cart-row__icon-btn:focus-visible {
+  outline: 2px solid #4880ee;
+  outline-offset: 2px;
+}
+
+.common-menu-bottom-cart-row__icon-btn img {
+  display: block;
+  width: 45px;
+  height: 45px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.common-menu-bottom-cart-row__icon-btn--minus {
+  margin-left: 162px;
+}
+
+.common-menu-bottom-cart-row__qty {
+  margin: 0 0 0 21px;
+  padding: 0;
+  flex-shrink: 0;
+  color: #424242;
+  text-align: center;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  min-width: 1ch;
+}
+
+.common-menu-bottom-cart-row__icon-btn--plus {
+  margin-left: 21px;
+}
+
+.common-menu-bottom-cart-row__line-price {
+  margin: 0 0 0 111px;
+  padding: 0;
+  flex-shrink: 0;
+  color: #424242;
+  text-align: center;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.common-menu-bottom-cart-row__btn-remove {
+  margin: 0 0 0 9px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.common-menu-bottom-cart-row__btn-remove:focus-visible {
+  outline: 2px solid #4880ee;
+  outline-offset: 2px;
+}
+
+.common-menu-bottom-cart-row__btn-remove img {
+  display: block;
+  width: 51.163px;
+  height: 51.163px;
+  aspect-ratio: 1 / 1;
+  transform: rotate(90deg);
+  object-fit: contain;
+}

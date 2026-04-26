@@ -40,6 +40,17 @@ button.outline-frame {
   line-height: normal;
 }
 
+/* 최초 진입 HomeScreen만 기본 정렬 — 모드 선택 이후 홈 OutlineFrame은 아이콘·「처음으로」 살짝 위로 */
+.outline-frame--home:not(.home-screen__back-frame) .outline-frame__inner {
+  padding-top: 6px;
+  transform: translateY(-4px);
+}
+
+.outline-frame--home:not(.home-screen__back-frame) .outline-frame__label--home {
+  margin: 0;
+  padding: 0;
+}
+
 .outline-frame--staff {
   position: relative;
   padding: 10px;
