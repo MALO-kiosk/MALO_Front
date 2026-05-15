@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from 'react'
-import menuStrawberryImg from '@/assets/images/menu_StrawberryMatcha.png'
 import {
   MenuCategoryTabs,
   OrderTotalBar,
@@ -11,19 +10,11 @@ import {
 import { CommonMenuBottomCartRow } from './CommonMenuBottomCartRow'
 import { CommonMenuBottomPanel } from './CommonMenuBottomPanel'
 import { CommonMenuProductCard } from './CommonMenuProductCard'
+import {
+  COMMON_MENU_DUMMY_PRODUCT,
+  commonMenuDummyCartLine,
+} from './commonMenuDummy'
 import './CommonMenuSelectScreen.css'
-
-const MENU_STRAWBERRY_ID = 'strawberry-matcha'
-
-function strawberryLine(quantity: number): EasyCartLineItem {
-  return {
-    id: MENU_STRAWBERRY_ID,
-    name: '스트로베리말차',
-    unitPriceWon: 3900,
-    imageSrc: menuStrawberryImg,
-    quantity,
-  }
-}
 
 export type CommonMenuSelectScreenProps = {
   /** 처음으로 → 홈 */
@@ -40,8 +31,8 @@ export function CommonMenuSelectScreen({
 
   const handleSelectMenu = useCallback(() => {
     setCartLine((prev) => {
-      if (!prev || prev.id !== MENU_STRAWBERRY_ID) {
-        return strawberryLine(1)
+      if (!prev || prev.id !== COMMON_MENU_DUMMY_PRODUCT.id) {
+        return commonMenuDummyCartLine(1)
       }
       return { ...prev, quantity: prev.quantity + 1 }
     })
@@ -87,7 +78,12 @@ export function CommonMenuSelectScreen({
       <TopWhitePanel as="main" autoHeight minHeightPx={287}>
         <MenuCategoryTabs />
       </TopWhitePanel>
-      <CommonMenuProductCard onSelect={handleSelectMenu} />
+      <CommonMenuProductCard
+        imageSrc={COMMON_MENU_DUMMY_PRODUCT.imageSrc}
+        name={COMMON_MENU_DUMMY_PRODUCT.name}
+        priceLabel={COMMON_MENU_DUMMY_PRODUCT.priceLabel}
+        onSelect={handleSelectMenu}
+      />
       <ProgressBar />
       <CommonMenuBottomPanel>
         {cartLine ? (

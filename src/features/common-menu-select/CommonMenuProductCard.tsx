@@ -1,19 +1,18 @@
 import type { KeyboardEvent } from 'react'
-import menuStrawberryImg from '@/assets/images/menu_StrawberryMatcha.png'
 import './CommonMenuProductCard.css'
 
 export type CommonMenuProductCardProps = {
-  imageSrc?: string
-  name?: string
-  priceLabel?: string
+  imageSrc: string
+  name: string
+  priceLabel: string
   /** 카드 선택 시 (예: 하단 패널에 담기) */
   onSelect?: () => void
 }
 
 export function CommonMenuProductCard({
-  imageSrc = menuStrawberryImg,
-  name = '스트로베리말차',
-  priceLabel = '3,900원',
+  imageSrc,
+  name,
+  priceLabel,
   onSelect,
 }: CommonMenuProductCardProps) {
   const interactive = Boolean(onSelect)
