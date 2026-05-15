@@ -20,3 +20,21 @@
   z-index: 2;
 }
 
+.easy-menu-select__menu-grid {
+  position: absolute;
+  top: 390px;
+  left: 30.02px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 17.4px;
+}
+
+.easy-menu-select__menu-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 22.75px;
+}
+

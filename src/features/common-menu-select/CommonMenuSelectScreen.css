@@ -20,3 +20,21 @@
   z-index: 2;
 }
 
+.common-menu-select__product-grid {
+  position: absolute;
+  top: 383px;
+  left: 29px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 17px;
+}
+
+.common-menu-select__product-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 17px;
+}
+

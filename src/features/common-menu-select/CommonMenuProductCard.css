@@ -8,10 +8,8 @@
 }
 
 .common-menu-product-card {
-  position: absolute;
-  top: 383px;
-  left: 29px;
-  z-index: 2;
+  position: relative;
+  flex-shrink: 0;
   width: 242px;
   height: 334px;
   box-sizing: border-box;

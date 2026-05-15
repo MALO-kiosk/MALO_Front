@@ -99,7 +99,18 @@ export function EasyMenuSelectScreen({
       <TopWhitePanel as="main" autoHeight minHeightPx={287}>
         <MenuCategoryTabs />
       </TopWhitePanel>
-      <EasyMenu onSelect={addStrawberryToCart} />
+      <div className="easy-menu-select__menu-grid">
+        {Array.from({ length: 2 }, (_, row) => (
+          <div key={row} className="easy-menu-select__menu-row">
+            {Array.from({ length: 3 }, (_, i) => (
+              <EasyMenu
+                key={`${row}-${i}`}
+                onSelect={addStrawberryToCart}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
       <ProgressBar />
       <AISpeechDisplay />
       <EasyCartBar

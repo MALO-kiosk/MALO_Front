@@ -78,12 +78,21 @@ export function CommonMenuSelectScreen({
       <TopWhitePanel as="main" autoHeight minHeightPx={287}>
         <MenuCategoryTabs />
       </TopWhitePanel>
-      <CommonMenuProductCard
-        imageSrc={COMMON_MENU_DUMMY_PRODUCT.imageSrc}
-        name={COMMON_MENU_DUMMY_PRODUCT.name}
-        priceLabel={COMMON_MENU_DUMMY_PRODUCT.priceLabel}
-        onSelect={handleSelectMenu}
-      />
+      <div className="common-menu-select__product-grid">
+        {Array.from({ length: 2 }, (_, row) => (
+          <div key={row} className="common-menu-select__product-row">
+            {Array.from({ length: 4 }, (_, i) => (
+              <CommonMenuProductCard
+                key={`${row}-${i}`}
+                imageSrc={COMMON_MENU_DUMMY_PRODUCT.imageSrc}
+                name={COMMON_MENU_DUMMY_PRODUCT.name}
+                priceLabel={COMMON_MENU_DUMMY_PRODUCT.priceLabel}
+                onSelect={handleSelectMenu}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
       <ProgressBar />
       <CommonMenuBottomPanel>
         {cartLine ? (

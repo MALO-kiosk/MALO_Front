@@ -15,9 +15,8 @@ button.easy-menu:focus-visible {
 }
 
 .easy-menu {
-  position: absolute;
-  left: 30.02px;
-  top: 390px;
+  position: relative;
+  flex-shrink: 0;
   width: 323.908px;
   height: 447.047px;
   box-sizing: border-box;
