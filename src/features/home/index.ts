@@ -1,1 +1,7 @@
-export { HomeScreen, type HomeScreenProps } from './HomeScreen'
+export { HomeScreen } from './HomeScreen'
+export { default as OrderConfirm2 } from './OrderConfirm2'
+export { default as PaymentSelect } from './PaymentSelect'
+export { default as StampInput } from './StampInput'
+export { default as StampProgress } from './StampProgress'
+export { default as OrderComplete_receipt } from './OrderComplete_receipt'
+export { default as OrderComplete_alarm } from './OrderComplete_alarm'
