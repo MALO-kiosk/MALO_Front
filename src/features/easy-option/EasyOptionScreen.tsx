@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   AISpeechDisplay,
   EasyCartBarTotal,
@@ -6,11 +5,12 @@ import {
   OutlineFrame,
   TopWhitePanel,
 } from '@/components/common'
+import type { OrderLineDraft } from '@/lib/orderLineDraft'
+import { computeAdditionalWon } from '@/lib/orderLineDraft'
 import './EasyOptionScreen.css'
 
 type TempChoice = 'ice' | 'hot'
 type SizeChoice = 'regular' | 'large'
-type CupChoice = 'mug' | 'personal'
 
 /** 카트 요약 줄 — 예: ICE / R, HOT / L */
 export function cartSummarySpec(temp: TempChoice, size: SizeChoice): string {
@@ -20,6 +20,8 @@ export function cartSummarySpec(temp: TempChoice, size: SizeChoice): string {
 }
 
 export type EasyOptionScreenProps = {
+  orderLine: OrderLineDraft
+  onOrderLineChange: (patch: Partial<OrderLineDraft>) => void
   /** 처음으로 → 홈 */
   onGoHome?: () => void
   /** 상단 옵션 안내 문구 */
@@ -33,15 +35,15 @@ export type EasyOptionScreenProps = {
 }
 
 export function EasyOptionScreen({
+  orderLine,
+  onOrderLineChange,
   onGoHome,
   optionTitle = '옵션',
   onCancelOrder,
   onAddMenu,
   onOpenCustomOption,
 }: EasyOptionScreenProps) {
-  const [temp, setTemp] = useState<TempChoice>('ice')
-  const [size, setSize] = useState<SizeChoice>('regular')
-  const [cup, setCup] = useState<CupChoice>('mug')
+  const { temp, size, cup } = orderLine
 
   return (
     <div className="easy-option">
@@ -60,7 +62,7 @@ export function EasyOptionScreen({
           type="button"
           className={`easy-option__temp-btn ${temp === 'ice' ? 'easy-option__temp-btn--selected' : 'easy-option__temp-btn--unselected'}`}
           aria-pressed={temp === 'ice'}
-          onClick={() => setTemp('ice')}
+          onClick={() => onOrderLineChange({ temp: 'ice' })}
         >
           ICE
         </button>
@@ -68,7 +70,7 @@ export function EasyOptionScreen({
           type="button"
           className={`easy-option__temp-btn ${temp === 'hot' ? 'easy-option__temp-btn--selected' : 'easy-option__temp-btn--unselected'}`}
           aria-pressed={temp === 'hot'}
-          onClick={() => setTemp('hot')}
+          onClick={() => onOrderLineChange({ temp: 'hot' })}
         >
           HOT
         </button>
@@ -79,7 +81,7 @@ export function EasyOptionScreen({
           type="button"
           className={`easy-option__temp-btn ${size === 'regular' ? 'easy-option__temp-btn--selected' : 'easy-option__temp-btn--unselected'}`}
           aria-pressed={size === 'regular'}
-          onClick={() => setSize('regular')}
+          onClick={() => onOrderLineChange({ size: 'regular' })}
         >
           Regular
         </button>
@@ -87,7 +89,7 @@ export function EasyOptionScreen({
           type="button"
           className={`easy-option__temp-btn ${size === 'large' ? 'easy-option__temp-btn--selected' : 'easy-option__temp-btn--unselected'}`}
           aria-pressed={size === 'large'}
-          onClick={() => setSize('large')}
+          onClick={() => onOrderLineChange({ size: 'large' })}
         >
           Large
         </button>
@@ -98,7 +100,7 @@ export function EasyOptionScreen({
           type="button"
           className={`easy-option__temp-btn ${cup === 'mug' ? 'easy-option__temp-btn--selected' : 'easy-option__temp-btn--unselected'}`}
           aria-pressed={cup === 'mug'}
-          onClick={() => setCup('mug')}
+          onClick={() => onOrderLineChange({ cup: 'mug' })}
         >
           머그컵
         </button>
@@ -106,7 +108,7 @@ export function EasyOptionScreen({
           type="button"
           className={`easy-option__temp-btn ${cup === 'personal' ? 'easy-option__temp-btn--selected' : 'easy-option__temp-btn--unselected'}`}
           aria-pressed={cup === 'personal'}
-          onClick={() => setCup('personal')}
+          onClick={() => onOrderLineChange({ cup: 'personal' })}
         >
           개인컵
         </button>
@@ -121,7 +123,14 @@ export function EasyOptionScreen({
       </button>
       <p className="easy-option__custom-hint">* 더 상세하게, 내 취향대로! *</p>
       <AISpeechDisplay />
-      <EasyCartBarTotal menuSpec={cartSummarySpec(temp, size)} />
+      <EasyCartBarTotal
+        imageSrc={orderLine.imageSrc}
+        menuName={orderLine.name}
+        menuSpec={cartSummarySpec(temp, size)}
+        unitPriceWon={orderLine.unitPriceWon}
+        initialQuantity={orderLine.quantity}
+        additionalAmountWon={computeAdditionalWon(orderLine)}
+      />
       <EasyOrderActionBar onCancel={onCancelOrder} onAddMenu={onAddMenu} />
     </div>
   )

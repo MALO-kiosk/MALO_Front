@@ -1,0 +1,292 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+
+/* 배경 및 카드 레이아웃 */
+.complete-page {
+  position: fixed;
+  inset: 0;
+  background: #f6f9fe;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.complete-title {
+  color: #000;
+  text-align: center;
+  margin-top: 67px !important;
+  font-family: Pretendard;
+  font-size: 60px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.complete-card {
+  position: absolute;
+  width: 956px;
+  height: 1443px;
+  top: 350px;
+  left: 62px;
+  background: #FFF;
+  border-radius: 36px;
+  box-shadow: 0 0 8.9px 6px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 60px 60px 60px;
+  box-sizing: border-box;
+}
+
+/* 모바일 페이 아이콘과 글씨를 포함하는 박스 */
+.mobile-pay-container {
+  position: absolute !important;
+  top: 193px !important; /* 카드 박스 상단에서 193px */
+  left: 44px !important;  /* 카드 박스 왼쪽에서 44px */
+  display: inline-flex !important;
+  padding: 58px 53px 58px 54px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  border-radius: 37px !important;
+  background: #FFF !important;
+  box-shadow: 0 0 19.2px 0 rgba(0, 0, 0, 0.10) !important;
+  z-index: 2;
+  border: none !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+/* 박스 내부 PAY 아이콘 */
+.pay-icon-select {
+  width: 80px !important;
+  height: 80px !important;
+  margin-right: 24px !important; /* 텍스트(202) - 박스(44) - 패딩(54) - 아이콘(80) = 24px */
+}
+
+/* 모바일 페이 텍스트 스타일 */
+.mobile-pay-text {
+  color: #000 !important;
+  text-align: center !important;
+  font-family: Pretendard !important;
+  font-size: 48px !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
+  line-height: normal !important;
+  letter-spacing: 0.48px !important;
+  white-space: nowrap !important;
+}
+
+/* 쿠폰사용 아이콘과 글씨를 포함하는 박스 */
+.coupon-pay-container {
+  position: absolute !important;
+  top: 193px !important;
+  left: 501px !important; /* 모바일 페이 박스(44px + 약 411px + 간격) 옆에 배치 */
+  display: inline-flex !important;
+  padding: 58px 53px 58px 54px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 24px !important; /* 아이콘과 텍스트 사이 간격 */
+  border-radius: 37px !important;
+  background: #FFF !important;
+  box-shadow: 0 0 19.2px 0 rgba(0, 0, 0, 0.10) !important;
+  z-index: 2;
+  border: none !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.pay2-icon-select {
+  width: 100px !important;
+  height: 100px !important;
+}
+
+.coupon-pay-text {
+  color: #000 !important;
+  text-align: center !important;
+  font-family: Pretendard !important;
+  font-size: 48px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.48px !important;
+  white-space: nowrap !important;
+}
+
+/* 할인 수단 아이콘과 글씨를 포함하는 박스 */
+.discount-pay-container {
+  position: absolute !important;
+  top: 420px !important; /* 카드 박스 상단에서 420px */
+  left: 44px !important;  /* 카드 박스 왼쪽에서 44px */
+  display: inline-flex !important;
+  padding: 47.5px 65px 46.5px 65px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 24px !important;
+  border-radius: 37px !important;
+  background: #FFF !important;
+  box-shadow: 0 0 19.2px 0 rgba(0, 0, 0, 0.10) !important;
+  z-index: 2;
+  border: none !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.pay3-icon-select {
+  width: 82.502px !important;
+  height: 66px !important;
+}
+
+.discount-pay-text {
+  color: #000 !important;
+  text-align: center !important;
+  font-family: Pretendard !important;
+  font-size: 48px !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
+  line-height: normal !important;
+  letter-spacing: 0.48px !important;
+  white-space: nowrap !important;
+}
+
+/* 앱 카드 아이콘과 글씨를 포함하는 박스 */
+.app-card-container {
+  position: absolute !important;
+  top: 417px !important; /* 카드 박스 상단에서 417px */
+  left: 486px !important; /* 카드 박스 왼쪽에서 486px */
+  display: inline-flex !important;
+  padding: 33.5px 64px 32.5px 65px !important; /* 요청하신 정밀 패딩 */
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 24px !important; /* 아이콘과 텍스트 사이 간격 */
+  border-radius: 37px !important;
+  background: #FFF !important;
+  box-shadow: 0 0 19.2px 0 rgba(0, 0, 0, 0.10) !important;
+  z-index: 2;
+  border: none !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.pay4-icon-select {
+  width: 130px !important;
+  height: 130px !important;
+}
+
+.app-card-text {
+  color: #000 !important;
+  text-align: center !important;
+  font-family: Pretendard !important;
+  font-size: 48px !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
+  line-height: normal !important;
+  letter-spacing: 0.48px !important;
+  white-space: nowrap !important;
+}
+
+/* 신용카드 아이콘과 글씨를 포함하는 박스 */
+.credit-card-container {
+  position: absolute !important;
+  top: 641px !important; /* 카드 박스 상단에서 641px */
+  left: 44px !important;  /* 카드 박스 왼쪽에서 44px */
+  display: inline-flex !important;
+  padding: 55.5px 209px 54.5px 210px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 40px !important; /* 아이콘과 텍스트 사이 간격 */
+  border-radius: 37px !important;
+  background: #FFF !important;
+  box-shadow: 0 0 19.2px 0 rgba(0, 0, 0, 0.10) !important;
+  z-index: 2;
+  border: none !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.pay5-icon-select {
+  width: 140.875px !important;
+  height: 110.688px !important;
+}
+
+.credit-card-text {
+  color: #000 !important;
+  text-align: center !important;
+  font-family: Pretendard !important;
+  font-size: 70px !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
+  line-height: normal !important;
+  white-space: nowrap !important;
+}
+
+/* 결제 그리드 레이아웃 */
+.payment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2열 */
+  gap: 20px;
+  width: 710px;
+  margin-top: 60px;
+}
+
+.payment-item {
+  height: 160px;
+  background: #FFFFFF;
+  border: 1px solid #F0F0F0;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  font-size: 36px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+}
+
+/* 신용카드 버튼 (가로로 꽉 차게) */
+.card-large {
+  grid-column: span 2; /* 2칸 다 차지 */
+  height: 220px;
+  flex-direction: row;
+  gap: 30px;
+}
+
+.pay-icon { font-size: 48px; }
+.pay-icon-large { font-size: 80px; }
+.pay-text-large { font-size: 48px; font-weight: 600; }
+
+/* 이전 버튼 스타일 (하단 정렬) */
+.prev-btn-full {
+  position: absolute !important;
+  top: 1258px !important; /* 카드 박스 상단에서 1258px */
+  left: 45px !important;  /* 카드 박스 왼쪽에서 45px */
+  display: flex !important;
+  width: 420px !important;
+  padding: 36px 0 35px 0 !important;
+  justify-content: center !important;
+  align-items: center !important;
+  border-radius: 10px !important;
+  background: #656666 !important;
+  box-shadow: 0 0 50.4px 0 rgba(0, 0, 0, 0.09) !important;
+  color: #FFF !important;
+  font-family: Pretendard !important;
+  font-size: 48px !important;
+  font-weight: 500 !important;
+  line-height: normal !important;
+  white-space: nowrap !important;
+  border: none !important;
+  cursor: pointer !important;
+  z-index: 2 !important; /* 다른 요소에 가려지지 않게 설정 */
+}
+
+/* 버튼 클릭 시 눌림 효과 */
+.mobile-pay-container:active,
+.coupon-pay-container:active,
+.discount-pay-container:active,
+.app-card-container:active,
+.credit-card-container:active {
+  transform: scale(0.98) !important;
+  filter: brightness(0.95);
+}
+
+.payment-item:active {
+  background: #f8f8f8;
+  transform: scale(0.98);
+}

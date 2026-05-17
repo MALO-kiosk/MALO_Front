@@ -1,0 +1,294 @@
+/* 공통 레이아웃 — StageViewport(1080×1920) 캔버스 기준 배치 */
+.complete-page {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #f6f9fe;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.complete-card {
+  position: absolute; 
+  width: 956px; 
+  height: 1443px;
+  top: 350px;
+  left: 62px;
+  background: #FFF; 
+  border-radius: 36px;
+  box-shadow: 0 0 8.9px 6px rgba(0, 0, 0, 0.04);
+  display: flex; flex-direction: column; align-items: center; padding: 0 60px 60px 60px; box-sizing: border-box;
+}
+.complete-title {
+  margin-top: 67px;
+  color: #000;
+  font-family: Pretendard;
+  font-size: 60px;
+  font-weight: 500;
+  line-height: normal;
+  white-space: nowrap;
+  margin-bottom: 40px;
+}
+
+/* 취소 아이콘 위치 설정 */
+.cancel-icon {
+  position: absolute;
+  top: 365px;
+  left: 60px;
+  width: 46px;
+  height: 46px;
+  cursor: pointer;
+}
+
+/* 주문 확인 전용 */
+.order-list-container { 
+  width: 862px;
+  margin-top: 500px; /* 구분선(497px) 아래에 위치하도록 조정 */
+}
+
+/* 헤더 배경 박스 (862x85, 상단에서 202px) */
+.order-header-bg {
+  position: absolute !important;
+  top: 202px !important;
+  left: 47px !important; /* (카드너비 956px - 박스너비 862px) / 2 = 47px */
+  width: 862px !important;
+  height: 85px !important;
+  background: #F2F2F2 !important;
+  border-radius: 4px !important;
+  display: block !important;
+  z-index: 1 !important;
+}
+
+.order-header {
+  position: absolute !important;
+  top: 218px !important;
+  left: 113px !important;
+  color: #000;
+  font-family: Pretendard;
+  font-size: 34px !important;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  white-space: nowrap;
+  z-index: 2; /* 배경 박스(z-index: 1)보다 위에 배치 */
+}
+
+.header-quantity {
+  position: absolute !important;
+  top: 218px !important;
+  left: 629px !important;
+  color: #000;
+  font-family: Pretendard;
+  font-size: 34px !important;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.header-amount {
+  position: absolute !important;
+  top: 218px !important;
+  left: 792px !important;
+  color: #000;
+  font-family: Pretendard;
+  font-size: 34px !important;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+/* "스트로베리 피치프라페" 텍스트 스타일 및 위치 */
+.first-order-item-name {
+  position: absolute !important;
+  top: 329px !important;
+  left: 272.72px !important;
+  color: #000;
+  font-family: Pretendard;
+  font-size: 31.059px !important;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  white-space: nowrap; /* 텍스트가 한 줄로 유지되도록 */
+  z-index: 2; /* 배경 박스 위에 표시 */
+}
+
+/* 첫 번째 아이템 옵션 스타일 및 위치 */
+.first-order-item-option {
+  position: absolute !important;
+  top: 376.652px !important;
+  left: 272.72px !important;
+  color: #848484 !important;
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 18.118px !important;
+  font-style: normal !important;
+  font-weight: 400 !important;
+  line-height: normal !important;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+/* 첫 번째 아이템 수량 스타일 및 위치 */
+.first-order-item-qty {
+  position: absolute !important;
+  top: 365.61px !important;
+  left: 642px !important; /* 수량 헤더(629px) 기준 정렬 */
+  color: #000;
+  font-family: Pretendard;
+  font-size: 33.103px!important;
+  font-weight: 400;
+  line-height: normal;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+/* 첫 번째 아이템 금액 스타일 및 위치 */
+.first-order-item-price {
+  position: absolute !important;
+  top: 365.61px !important; /* 카드박스 상단으로부터 365.61px */
+  left: 760px !important;
+  color: #000;
+  font-family: Pretendard;
+  font-size: 33.103px !important;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+/* 첫 번째 메뉴 이미지 스타일 및 위치 */
+.first-menu-image {
+  position: absolute !important;
+  top: 329px !important;
+  left: 123px !important;
+  width: 102px !important;
+  height: 109px !important;
+  border-radius: 6.971px;
+  background-color: lightgray;
+  object-fit: cover;
+  z-index: 2;
+}
+
+/* 상단 497px 위치의 구분선 */
+.order-divider-line {
+  position: absolute;
+  top: 497px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 773px;
+  height: 1px;
+  background-color: #A1A1A1;
+}
+
+.order-item { display: flex; align-items: center; padding: 30px 10px; }
+.item-info { flex: 1; }
+.item-name { font-size: 24px; font-weight: 600; }
+.item-option { font-size: 16px; color: #888; }
+
+/* 요약 영역 상단 구분선 (요청: 상단 1125px) */
+.summary-line {
+  position: absolute;
+  top: 1125px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 825px;
+  height: 3px;
+  border-radius: 69px;
+  background: #E1E1E1;
+}
+
+/* 요약 영역 하단 구분선 (요청: 상단 1216px) */
+.summary-line-bottom {
+  position: absolute;
+  top: 1216px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 825px;
+  height: 3px;
+  border-radius: 69px;
+  background: #E1E1E1;
+}
+
+/* 총수량 및 총금액 텍스트 (요청: 상단 1150px 고정) */
+.total-qty-label, .total-qty-value, .total-amount-label, .total-amount-value {
+  position: absolute;
+  top: 1150px;
+  color: #000;
+  font-family: Pretendard;
+  font-size: 36px;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+}
+
+.total-qty-label {
+  left: 96px;
+  font-weight: 500;
+}
+
+.total-qty-value {
+  left: 410px;
+  font-weight: 400;
+}
+
+.total-amount-label {
+  left: 529px;
+  font-weight: 500;
+}
+
+.total-amount-value {
+  left: 736px;
+  font-weight: 400;
+  text-align: right;
+}
+
+.summary-divider { width: 1px; height: 30px; background: #E0E0E0; }
+
+/* 공통 버튼 */
+.button-group {
+  position: absolute;
+  top: 1259px; /* 카드 박스 상단에서 1259px */
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+}
+.no-btn {
+  display: flex;
+  width: 433px !important; /* 피그마 너비 강제 적용 */
+  padding: 36px 0 35px 0 !important; /* 피그마 패딩 강제 적용 */
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 10px 0 0 10px;
+  background: #656666;
+  font-size: 48px;
+  border: none;
+  cursor: pointer;
+  color: white;
+}
+.yes-btn { /* '결제하기' 버튼도 '이전' 버튼과 동일한 크기와 패딩 적용 */
+  display: flex;
+  width: 433px !important; /* 피그마 너비 강제 적용 */
+  padding: 36px 0 35px 0 !important; /* 피그마 패딩 강제 적용 */
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  background: #4880EE;
+  border-radius: 0 10px 10px 0;
+  font-size: 48px;
+  border: none;
+  cursor: pointer;
+  color: white;
+}
+.yes-btn-full { width: 710px; height: 128px; background: #4880EE; color: white; font-size: 48px; border-radius: 10px; border: none; }

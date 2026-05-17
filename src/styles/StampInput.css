@@ -1,0 +1,116 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+
+* {
+  box-sizing: border-box;
+  font-family: "Pretendard", sans-serif;
+}
+
+.complete-page {
+  position: fixed;
+  inset: 0;
+  background: #E5E5E5; /* 배경 대비를 위해 약간 어둡게 설정 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.complete-card {
+  position: absolute;
+  width: 956px;
+  height: 1443px;
+top: 350px;
+left: 62px;
+border-radius: 36px;
+background: #FFF;
+box-shadow: 0 0 8.9px 6px rgba(0, 0, 0, 0.04);
+opacity: 1;
+display: flex;
+flex-direction: column;
+align-items: center;
+}
+
+.complete-title {
+  margin-top: 67px;
+  margin-bottom: 10px;
+  font-size: 60px;
+  font-weight: 500;
+  color: #000;
+  white-space: nowrap;
+}
+
+.stamp-input-sub {
+  font-size: 32px;
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 60px;
+}
+
+.phone-display {
+  width: 100%;
+  font-size: 72px;
+  font-weight: 500;
+  margin-bottom: 80px;
+  color: #000000;
+  text-align: center;
+  height: 86px;
+}
+
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 100%;
+  padding: 0 20px;
+}
+
+.key-btn {
+  height: 160px;
+  background: #FFFFFF;
+  border: 1px solid #F5F5F5;
+  border-radius: 24px;
+  font-size: 52px;
+  font-weight: 600;
+  cursor: pointer;
+  /* 버튼 내부 미세한 그림자 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.1s;
+}
+
+.key-btn:active {
+  background: #f0f0f0;
+}
+
+.back-btn svg {
+  width: 50px;
+  height: auto;
+}
+
+.button-group {
+  margin-top: auto;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+
+.no-btn, .yes-btn {
+  width: 418px; /* 카드의 패딩을 고려한 버튼 너비 */
+  height: 140px;
+  font-size: 44px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  color: white;
+}
+
+.no-btn {
+  background: #656666;
+  border-radius: 20px 0 0 20px;
+}
+
+.yes-btn {
+  background: #4880EE;
+  border-radius: 0 20px 20px 0;
+}

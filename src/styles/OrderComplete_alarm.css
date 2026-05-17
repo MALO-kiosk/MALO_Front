@@ -1,0 +1,101 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+
+* {
+  font-family: "Pretendard Variable", Pretendard, sans-serif !important;
+}
+
+/* 배경 및 카드 레이아웃 */
+.complete-page {
+  position: fixed;
+  inset: 0;
+  background: #f6f9fe;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.complete-card {
+  position: absolute;
+  width: 956px;
+  height: 1443px;
+  top: 350px;
+  left: 62px;
+  background: #FFFFFF;
+  border-radius: 36px;
+  box-shadow: 0 0 8.9px 6px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 60px 60px 60px;
+  box-sizing: border-box;
+}
+
+.complete-title {
+  margin-top: 67px;
+  font-size: 60px;
+  font-weight: 500;
+  color: #333333;
+  white-space: nowrap;
+}
+
+.complete-card__question {
+  font-size: 48px;
+  font-weight: 500;
+  color: #333333;
+  margin-top: 40px;
+  margin-bottom: 80px;
+  text-align: center;
+}
+
+/* ❗ 수정한 부분: 숫자 뒤에 px를 다 붙여야 합니다 */
+.receipt-img, .alarm-img {
+  width: 440px; 
+  height: 440px;
+  object-fit: contain; /* 이미지가 찌그러지지 않게 */
+  opacity: 1;
+}
+
+.button-group {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: auto;
+  margin-bottom: 60px;
+}
+
+/* ❗ 수정한 부분: px 추가 및 폰트 크기 추가 */
+.yes-btn-full {
+  width: 710px; /* 영수증 페이지 버튼 두개 합친 너비랑 비슷하게 */
+  height: 128px;
+  border-radius: 10px;
+  background: #4880EE;
+  color: #FFFFFF;
+  font-size: 48px; /* 글자 크기도 넣어야 안 작아져요 */
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  opacity: 1;
+}
+
+/* 주문 완료 — 카드 상단에서 57px */
+.order-complete-view .complete-title {
+  position: absolute;
+  top: 57px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  align-self: stretch;
+  margin: 0;
+  padding: 0;
+  color: #000;
+  text-align: center;
+  font-family: Pretendard !important;
+  font-size: 60px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+
+.order-complete-view .complete-card__question {
+  margin-top: 150px;
+}

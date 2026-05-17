@@ -23,8 +23,8 @@ const MENU_STRAWBERRY = {
 export type EasyMenuSelectScreenProps = {
   /** 처음으로 → 홈 */
   onGoHome?: () => void
-  /** 주문하기 → 다음 단계 */
-  onOrder?: () => void
+  /** 주문하기 → 장바구니 항목과 함께 다음 단계 */
+  onOrder?: (items: EasyCartLineItem[]) => void
 }
 
 export function EasyMenuSelectScreen({
@@ -122,7 +122,10 @@ export function EasyMenuSelectScreen({
       <OrderTotalBar
         totalCount={totalCount}
         totalPrice={totalPriceLabel}
-        onOrder={onOrder}
+        onOrder={() => {
+          if (cartItems.length === 0) return
+          onOrder?.(cartItems)
+        }}
       />
     </div>
   )

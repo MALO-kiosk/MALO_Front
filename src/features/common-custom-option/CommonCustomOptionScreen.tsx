@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment } from 'react'
 import {
   EasyCartBarTotal,
   EasyOrderActionBar,
@@ -8,6 +8,8 @@ import {
 import minusIcon from '@/assets/icons/minus_icon.svg'
 import plusIcon from '@/assets/icons/plus_icon.svg'
 import { cartSummarySpec } from '@/features/easy-option'
+import type { OrderLineDraft } from '@/lib/orderLineDraft'
+import { computeAdditionalWon } from '@/lib/orderLineDraft'
 import '@/features/easy-option/EasyOptionScreen.css'
 import './CommonCustomOptionScreen.css'
 
@@ -19,11 +21,9 @@ const PEARL_ROW_LABELS = [
 
 const PEARL_ROW_ARIA = ['타피오카 펄', '화이트 펄', '알로에'] as const
 
-const CUSTOM_OPTION_UNIT_WON = 500
-
-type SweetnessChoice = 'more' | 'normal' | 'less'
-
 export type CommonCustomOptionScreenProps = {
+  orderLine: OrderLineDraft
+  onOrderLineChange: (patch: Partial<OrderLineDraft>) => void
   onGoHome?: () => void
   panelTitle?: string
   onCancelOrder?: () => void
@@ -31,23 +31,20 @@ export type CommonCustomOptionScreenProps = {
 }
 
 export function CommonCustomOptionScreen({
+  orderLine,
+  onOrderLineChange,
   onGoHome,
   panelTitle = '맞춤 옵션',
   onCancelOrder,
   onAddMenu,
 }: CommonCustomOptionScreenProps) {
-  const [shotQty, setShotQty] = useState(0)
-  const [syrupQty, setSyrupQty] = useState(0)
-  const [pearlQtys, setPearlQtys] = useState([0, 0, 0])
-  const [sweetness, setSweetness] = useState<SweetnessChoice>('more')
-
-  const additionalAmountWon = useMemo(() => {
-    const pearlSum = pearlQtys.reduce((a, b) => a + b, 0)
-    return (shotQty + syrupQty + pearlSum) * CUSTOM_OPTION_UNIT_WON
-  }, [shotQty, syrupQty, pearlQtys])
+  const { shotQty, syrupQty, pearlQtys, sweetness, temp, size } = orderLine
 
   const setPearlQtyRow = (row: number, next: (q: number) => number) => {
-    setPearlQtys((rows) => rows.map((q, i) => (i === row ? next(q) : q)))
+    const nextPearlQtys = pearlQtys.map((q, i) =>
+      i === row ? next(q) : q,
+    ) as OrderLineDraft['pearlQtys']
+    onOrderLineChange({ pearlQtys: nextPearlQtys })
   }
 
   return (
@@ -70,7 +67,9 @@ export function CommonCustomOptionScreen({
           type="button"
           className="common-custom-option__shot-qty-btn"
           aria-label="샷 한 개 빼기"
-          onClick={() => setShotQty((q) => Math.max(0, q - 1))}
+          onClick={() =>
+            onOrderLineChange({ shotQty: Math.max(0, shotQty - 1) })
+          }
         >
           <img src={minusIcon} alt="" width={54} height={54} />
         </button>
@@ -79,7 +78,7 @@ export function CommonCustomOptionScreen({
           type="button"
           className="common-custom-option__shot-qty-btn"
           aria-label="샷 한 개 더하기"
-          onClick={() => setShotQty((q) => q + 1)}
+          onClick={() => onOrderLineChange({ shotQty: shotQty + 1 })}
         >
           <img src={plusIcon} alt="" width={51} height={51} />
         </button>
@@ -92,7 +91,9 @@ export function CommonCustomOptionScreen({
           type="button"
           className="common-custom-option__shot-qty-btn"
           aria-label="바닐라 시럽 한 스푼 빼기"
-          onClick={() => setSyrupQty((q) => Math.max(0, q - 1))}
+          onClick={() =>
+            onOrderLineChange({ syrupQty: Math.max(0, syrupQty - 1) })
+          }
         >
           <img src={minusIcon} alt="" width={54} height={54} />
         </button>
@@ -101,7 +102,7 @@ export function CommonCustomOptionScreen({
           type="button"
           className="common-custom-option__shot-qty-btn"
           aria-label="바닐라 시럽 한 스푼 더하기"
-          onClick={() => setSyrupQty((q) => q + 1)}
+          onClick={() => onOrderLineChange({ syrupQty: syrupQty + 1 })}
         >
           <img src={plusIcon} alt="" width={51} height={51} />
         </button>
@@ -114,7 +115,7 @@ export function CommonCustomOptionScreen({
         className={`common-custom-option__sweetness-pill common-custom-option__sweetness-pill--slot-more ${sweetness === 'more' ? 'common-custom-option__sweetness-pill--selected' : 'common-custom-option__sweetness-pill--unselected'}`}
         aria-pressed={sweetness === 'more'}
         aria-label="더 달게"
-        onClick={() => setSweetness('more')}
+        onClick={() => onOrderLineChange({ sweetness: 'more' })}
       >
         <span className="common-custom-option__sweetness-pill-text">더 달게</span>
       </button>
@@ -123,7 +124,7 @@ export function CommonCustomOptionScreen({
         className={`common-custom-option__sweetness-pill common-custom-option__sweetness-pill--slot-normal ${sweetness === 'normal' ? 'common-custom-option__sweetness-pill--selected' : 'common-custom-option__sweetness-pill--unselected'}`}
         aria-pressed={sweetness === 'normal'}
         aria-label="보통"
-        onClick={() => setSweetness('normal')}
+        onClick={() => onOrderLineChange({ sweetness: 'normal' })}
       >
         <span className="common-custom-option__sweetness-pill-text">보통</span>
       </button>
@@ -132,7 +133,7 @@ export function CommonCustomOptionScreen({
         className={`common-custom-option__sweetness-pill common-custom-option__sweetness-pill--slot-less ${sweetness === 'less' ? 'common-custom-option__sweetness-pill--selected' : 'common-custom-option__sweetness-pill--unselected'}`}
         aria-pressed={sweetness === 'less'}
         aria-label="덜 달게"
-        onClick={() => setSweetness('less')}
+        onClick={() => onOrderLineChange({ sweetness: 'less' })}
       >
         <span className="common-custom-option__sweetness-pill-text common-custom-option__sweetness-pill-text--fluid">
           덜 달게
@@ -175,10 +176,18 @@ export function CommonCustomOptionScreen({
       ))}
 
       <EasyCartBarTotal
-        menuSpec={cartSummarySpec('ice', 'regular')}
-        additionalAmountWon={additionalAmountWon}
+        imageSrc={orderLine.imageSrc}
+        menuName={orderLine.name}
+        menuSpec={cartSummarySpec(temp, size)}
+        unitPriceWon={orderLine.unitPriceWon}
+        initialQuantity={orderLine.quantity}
+        additionalAmountWon={computeAdditionalWon(orderLine)}
       />
-      <EasyOrderActionBar onCancel={onCancelOrder} onAddMenu={onAddMenu} />
+      <EasyOrderActionBar
+        className="easy-order-action-bar--top"
+        onCancel={onCancelOrder}
+        onAddMenu={() => onAddMenu?.()}
+      />
     </div>
   )
 }

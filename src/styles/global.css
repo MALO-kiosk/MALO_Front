@@ -26,3 +26,32 @@ body {
 #root {
   min-height: 100%;
 }
+
+/* OrderConfirm / OrderConfirm2 — 1080×1920 스테이지 전체 */
+.order-confirm-stage {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  background: #f6f9fe;
+}
+
+/* feature/soyoung 플로우 — StageViewport 안에서 fixed 대신 absolute */
+.order-confirm-stage .complete-page,
+.order-confirm-stage .stamp-progress-view.complete-page {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+}
+
+.order-confirm-stage .order-flow-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  pointer-events: none;
+}

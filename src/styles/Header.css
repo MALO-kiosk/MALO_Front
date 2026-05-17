@@ -1,0 +1,8 @@
+.header-home-btn span:last-child {
+  color: #656666;
+  font-family: 'Pretendard', sans-serif; /* 폰트가 설치되어 있어야 적용됩니다 */
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}

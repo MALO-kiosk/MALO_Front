@@ -19,8 +19,8 @@ import './CommonMenuSelectScreen.css'
 export type CommonMenuSelectScreenProps = {
   /** 처음으로 → 홈 */
   onGoHome?: () => void
-  /** 주문하기 → 옵션 화면 */
-  onOrder?: () => void
+  /** 주문하기 → 담은 메뉴와 함께 옵션 화면 */
+  onOrder?: (line: EasyCartLineItem) => void
 }
 
 export function CommonMenuSelectScreen({
@@ -64,7 +64,7 @@ export function CommonMenuSelectScreen({
 
   const handleOrder = useCallback(() => {
     if (!cartLine) return
-    onOrder?.()
+    onOrder?.(cartLine)
   }, [cartLine, onOrder])
 
   return (

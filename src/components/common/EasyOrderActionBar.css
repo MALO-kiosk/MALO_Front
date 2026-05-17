@@ -12,6 +12,11 @@
   pointer-events: none;
 }
 
+/* 맞춤·옵션 화면 — 하단 카트 바 위에서 메뉴담기 클릭 보장 */
+.easy-order-action-bar--top {
+  z-index: 50;
+}
+
 .easy-order-action-bar__cancel,
 .easy-order-action-bar__add {
   position: absolute;

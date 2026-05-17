@@ -1,0 +1,149 @@
+.kiosk-header {
+  height: 84px;
+  background: #ffffff;
+  border-bottom: 1px solid #e8edf5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+
+.header-home-btn {
+  width: 152px;
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: #edf2f7;
+  color: #1f2937;
+  font-size: 17px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.home-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.header-lang-group {
+  display: flex;
+  gap: 10px;
+}
+
+.lang-flag-btn {
+  width: 54px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: #edf2f7;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-right-group {
+  display: flex;
+  gap: 12px;
+}
+
+.staff-call-btn,
+.bell-btn {
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: #edf2f7;
+  color: #1f2937;
+  font-size: 17px;
+  font-weight: 700;
+  padding: 0 18px;
+}
+
+.bell-btn {
+  width: 48px;
+  padding: 0;
+}
+
+.progress-wrap {
+  position: relative;
+  padding: 26px 44px 10px;
+}
+
+.progress-line-bg {
+  position: absolute;
+  top: 58px;
+  left: 44px;
+  right: 44px;
+  height: 8px;
+  border-radius: 999px;
+  background: #dce8fb;
+  overflow: hidden;
+}
+
+.progress-line-fill {
+  height: 100%;
+  background: #2f6dff;
+  border-radius: 999px;
+}
+
+.progress-step-row {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.progress-step {
+  width: 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid #cbd5e1;
+  background: #ffffff;
+  color: #7b8794;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.progress-circle.active {
+  background: #2f6dff;
+  border-color: #2f6dff;
+  color: #ffffff;
+}
+
+.progress-circle.done {
+  background: #dbe8ff;
+  border-color: #2f6dff;
+  color: #2f6dff;
+}
+
+.progress-label {
+  font-size: 14px;
+  color: #7b8794;
+  font-weight: 600;
+}
+
+.progress-step.active .progress-label,
+.progress-step.done .progress-label,
+.progress-label.active,
+.progress-label.done {
+  color: #2f6dff !important; /* 이전 단계와 현재 단계 글자 모두 파란색 */
+}
+
+/* SVG 아이콘 등이 포함될 경우를 대비 */
+.progress-step.active svg, .progress-step.done svg {
+  fill: #2f6dff !important;
+}

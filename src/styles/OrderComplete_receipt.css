@@ -1,0 +1,208 @@
+/* 이 코드가 인터넷에서 Pretendard 폰트를 가져옵니다 */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+
+/* 모든 태그(*)와 버튼(button)에 프리텐다드 적용 */
+* {
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif !important;
+}
+
+button {
+  font-family: inherit !important; /* 버튼은 폰트를 안 따라가는 경우가 많아서 필수! */
+}
+
+/* 1. 배경 (image_95c102.png와 동일한 배경색) */
+.complete-page {
+  position: fixed; /* 화면에 고정 */
+  inset: 0; /* 상하좌우 0으로 꽉 채움 */
+  background: #f6f9fe;
+  display: flex; /* 화면 중앙 정렬을 위해 필요 */
+  justify-content: center;
+  align-items: center;
+}
+
+/* 2. 요청하신 카드의 '디자인' */
+.complete-card {
+  position: absolute; /* .complete-page 내에서 절대 위치 */
+  
+  /* 피그마 규격 적용 */
+  width: 956px;
+  height: 1443px;
+  
+  /* 위치 고정 */
+  top: 350px;
+  left: 62px;
+
+  /* ❗ 디자인 스타일 */
+  background: #FFFFFF;
+  border-radius: 36px;
+  
+  /* 그림자: 0 0 8.9px radius, 6px spread, 투명도 4% 검정 */
+  box-shadow: 0 0 8.9px 6px rgba(0, 0, 0, 0.04);
+  opacity: 1;
+
+  /* 내부 콘텐츠 배치 (flex를 사용해 세로 중앙 정렬) */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 60px 60px 60px;
+  box-sizing: border-box; /* padding이 크기를 넘지 않게 */
+}
+
+/* 3. 내부 텍스트 스타일 (픽셀 단위로 고정) */
+.complete-title {
+margin-top: 67px;
+opacity: 1;
+font-family: Pretendard;
+font-weight: 500;
+font-size: 60px;
+leading-trim: NONE;
+line-height: 100%;
+white-space: nowrap;
+text-align: center;
+color: #333333;
+
+}
+
+.complete-card__question {
+  /* 크기 설정 (px 필수) */
+  width: 643px;
+  height: 57px;
+
+  /* 폰트 스타일 */
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500; /* Medium은 숫자로 500입니다 */
+  font-size: 48px;
+  line-height: 1.0; /* 100%는 1.0으로 표기 */
+  letter-spacing: 0;
+  text-align: center;
+  color: #333333;
+
+  /* 위치 설정 */
+  /* 카드 내에서 중앙 정렬을 하려면 아래 속성이 더 깔끔합니다 */
+  margin: 0 auto; 
+  margin-top: 40px; /* '주문 완료' 타이틀과의 간격 */
+  
+  /* 만약 절대 위치를 꼭 써야 한다면 아래 주석을 푸세요 */
+  /* position: absolute; top: 635px; left: 211px; */
+}
+
+.complete-card p {
+  font-size: 32px; /* 이미지상 본문 크기 */
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 120px; /* 본문과 다음 텍스트 간격 */
+}
+
+/* 4. 버튼 디자인 (디자인 가이드 반영) */
+.button-group {
+  display: flex;
+  justify-content: center;
+  gap: 0; /* 버튼 사이 간격이 없다면 0, 필요시 조정 */
+  width: 100%;
+  margin-top: auto;
+  padding: 20px 0; /* 주변 여유 공간 (필요시 조정) */
+}
+
+.button-group button {
+  /* 1. 폰트 설정 (Pretendard를 1순위로 사용하겠다는 뜻) */
+  font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif !important;
+
+  /* 2. 정렬 (글자를 정중앙에 배치) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 3. 디자인 수치 (피그마 그대로) */
+  font-size: 48px;        /* 글자 크기 */
+  font-weight: 500;       /* Medium 굵기 */
+  line-height: 1;         /* 줄 간격 (글자가 위아래로 밀리지 않게) */
+  letter-spacing: -0.02em; /* 자간 (글자 사이 간격을 살짝 좁힘) */
+  
+  color: #FFFFFF;        /* 글자색 흰색 */
+  border: none;
+  cursor: pointer;
+}
+
+/* '아니요' 버튼 (왼쪽, 회색) */
+.button-group button:first-child {
+  width: 355px;
+  height: 128px;
+  background-color: #656666; /* 색상: #656666 */
+  
+  /* 반경: 왼쪽 상단 10px, 왼쪽 하단 10px */
+  border-radius: 10px 0 0 10px; 
+  
+  /* 그림자: X:0, Y:0, Blur:50.4, Spread:0, Color: #000000 9% */
+  box-shadow: 0px 0px 50.4px 0px rgba(0, 0, 0, 0.09);
+  
+  opacity: 1;
+}
+
+/* '예' 버튼 (오른쪽, 파란색) */
+.button-group button:last-child {
+  width: 355px;
+  height: 128px;
+  background-color: #4880EE; /* 색상: #4880EE */
+  
+  /* 반경: 오른쪽 상단 10px, 오른쪽 하단 10px */
+  border-radius: 0 10px 10px 0;
+  
+  opacity: 1;
+}
+.receipt-img {
+  width: 372px;
+  height: 306px;
+  top: 823px;
+  left: 345px;
+  opacity: 1;
+}
+
+/* 주문 완료 — 카드 상단에서 57px */
+.order-complete-view .complete-title {
+  position: absolute;
+  top: 57px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  align-self: stretch;
+  margin: 0;
+  padding: 0;
+  color: #000;
+  text-align: center;
+  font-family: Pretendard !important;
+  font-size: 60px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+
+.order-complete-view .complete-card__question {
+  position: absolute;
+  top: 635px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 643px;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  color: #000;
+  text-align: center;
+  font-family: Pretendard !important;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: 0;
+  margin-bottom: 0;
+}
+
+/* 영수증 이미지 — 카드 상단에서 402px (피그마 좌표 left 345px 유지) */
+.order-complete-view .receipt-img {
+  position: absolute;
+  top: 402px;
+  left: 345px;
+  transform: none;
+  margin-top: 0;
+}

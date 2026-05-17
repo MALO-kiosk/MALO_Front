@@ -1,0 +1,154 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+
+.stamp-progress-view.complete-page {
+  position: fixed;
+  inset: 0;
+  width: 1080px;
+  height: 1920px;
+  background: rgba(0, 0, 0, 0.50);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.stamp-progress-view .complete-card {
+  position: absolute;
+  width: 823px;
+  height: 1220px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 36px;
+  background: #fff;
+  box-shadow: 0 0 8.9px 6px rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: visible;
+}
+
+/* 흰 카드 내부 좌표 기준 (absolute 자식의 containing block) */
+.stamp-progress-view .stamp-progress-card-inner {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+/* 흰 박스(카드) 상단에서 57px — 스탬프 적립 */
+.stamp-progress-view .stamp-progress-title {
+  position: absolute;
+  top: 57px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  align-self: stretch;
+  color: #000;
+  text-align: center;
+  font-family: Pretendard;
+  font-size: 60px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+
+/* 카드(흰 박스) 내부 상단 기준 295px — DevTools bounds의 top은 뷰포트 기준이라 카드 offset(예: 350px)을 더한 값으로 보입니다 */
+.stamp-progress-view .stamp-progress-main {
+  position: absolute;
+  top: 295px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  width: 581px;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  color: #000;
+  text-align: center;
+  font-family: Pretendard;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+
+/* 카드 상단에서 365px */
+.stamp-progress-view .stamp-progress-sub {
+  position: absolute;
+  top: 365px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 581px;
+  margin: 0;
+  color: #656666;
+  text-align: center;
+  font-family: Pretendard, sans-serif;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.stamp-progress-view .stamp-progress-container {
+  position: absolute;
+  top: 615px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.stamp-progress-view .stamp-progress-bar {
+  width: 710px;
+  height: 80px;
+  background: #ebebeb;
+  border-radius: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stamp-progress-view .stamp-progress-fill {
+  height: 100%;
+  background: #4880ee;
+  display: flex;
+  align-items: center;
+  padding-left: 30px;
+  color: #fff;
+  font-size: 32px;
+  font-weight: 600;
+  border-radius: 40px;
+  transition: width 0.5s ease-in-out;
+}
+
+/* 위치만 담당 (완료는 실제 <button>, 이미지 아님) */
+.stamp-progress-view .button-group {
+  position: absolute !important;
+  top: 1027px !important; /* 카드박스 상단에서 1027px 위치 고정 */
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0;
+}
+
+.stamp-progress-view .stamp-progress-complete-btn {
+  display: flex !important;
+  width: 700px !important; /* 요청하신 700px 너비 */
+  height: auto !important;
+  padding: 36px 0 35px 0 !important;
+  justify-content: center !important;
+  align-items: center !important;
+  border-radius: 10px !important;
+  background: #4880EE !important;
+  color: #fff !important;
+  font-size: 48px !important;
+  font-weight: 500 !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+}
