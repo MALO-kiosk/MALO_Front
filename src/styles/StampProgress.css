@@ -5,7 +5,7 @@
   inset: 0;
   width: 1080px;
   height: 1920px;
-  background: rgba(0, 0, 0, 0.50);
+  background: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -26,6 +26,7 @@
   flex-direction: column;
   align-items: stretch;
   overflow: visible;
+  z-index: 10001;
 }
 
 /* 흰 카드 내부 좌표 기준 (absolute 자식의 containing block) */
