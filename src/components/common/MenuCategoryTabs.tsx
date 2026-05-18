@@ -36,18 +36,45 @@ const COFFEE_DETAIL_TABS: CoffeeDetailDef[] = [
   { id: 'tea', label: '티/라떼', gapBefore: 39 },
 ]
 
+export type MenuCategorySelection = {
+  menuCategory: MenuCategoryId
+  coffeeDetail: CoffeeDetailCategoryId
+}
+
 export type MenuCategoryTabsProps = {
   className?: string
   initialActiveId?: MenuCategoryId
+  initialCoffeeDetail?: CoffeeDetailCategoryId
+  /** 탭 변경 시 상위·하위 카테고리 전달 */
+  onSelectionChange?: (selection: MenuCategorySelection) => void
 }
 
 export function MenuCategoryTabs({
   className,
   initialActiveId = 'coffee',
+  initialCoffeeDetail = 'coffee',
+  onSelectionChange,
 }: MenuCategoryTabsProps) {
   const [activeId, setActiveId] = useState<MenuCategoryId>(initialActiveId)
   const [activeCoffeeDetail, setActiveCoffeeDetail] =
-    useState<CoffeeDetailCategoryId>('coffee')
+    useState<CoffeeDetailCategoryId>(initialCoffeeDetail)
+
+  const emitSelection = (
+    menuCategory: MenuCategoryId,
+    coffeeDetail: CoffeeDetailCategoryId,
+  ) => {
+    onSelectionChange?.({ menuCategory, coffeeDetail })
+  }
+
+  const selectMenuCategory = (id: MenuCategoryId) => {
+    setActiveId(id)
+    emitSelection(id, activeCoffeeDetail)
+  }
+
+  const selectCoffeeDetail = (id: CoffeeDetailCategoryId) => {
+    setActiveCoffeeDetail(id)
+    emitSelection(activeId, id)
+  }
 
   return (
     <div
@@ -74,7 +101,7 @@ export function MenuCategoryTabs({
                 .filter(Boolean)
                 .join(' ')}
               style={{ marginLeft: tab.gapBefore }}
-              onClick={() => setActiveId(tab.id)}
+              onClick={() => selectMenuCategory(tab.id)}
             >
               <span className="menu-category-tabs__label">{tab.label}</span>
             </button>
@@ -103,7 +130,7 @@ export function MenuCategoryTabs({
                   .filter(Boolean)
                   .join(' ')}
                 style={{ marginLeft: tab.gapBefore }}
-                onClick={() => setActiveCoffeeDetail(tab.id)}
+                onClick={() => selectCoffeeDetail(tab.id)}
               >
                 <span className="coffee-detail-tabs__label">{tab.label}</span>
               </button>

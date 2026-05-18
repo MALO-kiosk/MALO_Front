@@ -1,7 +1,9 @@
 import type { OrderLineDraft } from '@/lib/orderLineDraft'
 import {
   computeLineTotalWon,
+  enrichOrderLineFromCatalog,
   formatOrderOptionLine,
+  orderLineDisplayName,
 } from '@/lib/orderLineDraft'
 import cancelIcon from '@/assets/icons/cancel.svg'
 
@@ -16,7 +18,9 @@ export function OrderConfirmContent({
   onNext,
   onPrev,
 }: OrderConfirmContentProps) {
-  const lineTotalWon = computeLineTotalWon(line)
+  const displayLine = enrichOrderLineFromCatalog(line)
+  const menuName = orderLineDisplayName(displayLine)
+  const lineTotalWon = computeLineTotalWon(displayLine)
   const priceLabel = `${lineTotalWon.toLocaleString('ko-KR')} 원`
   const totalLabel = `${lineTotalWon.toLocaleString('ko-KR')}원`
 
@@ -30,22 +34,24 @@ export function OrderConfirmContent({
       <div className="header-amount">금액</div>
 
       <img
-        src={line.imageSrc}
-        alt={line.name}
+        src={displayLine.imageSrc}
+        alt={menuName}
         className="first-menu-image"
       />
 
-      <p className="first-order-item-name">{line.name}</p>
-      <p className="first-order-item-option">{formatOrderOptionLine(line)}</p>
+      <div className="first-order-item-text">
+        <p className="first-order-item-name">{menuName}</p>
+        <p className="first-order-item-option">{formatOrderOptionLine(displayLine)}</p>
+      </div>
 
-      <span className="first-order-item-qty">{line.quantity}개</span>
+      <span className="first-order-item-qty">{displayLine.quantity}개</span>
       <span className="first-order-item-price">{priceLabel}</span>
 
       <div className="order-divider-line" />
 
       <div className="summary-line" />
       <span className="total-qty-label">총수량</span>
-      <span className="total-qty-value">{line.quantity}개</span>
+      <span className="total-qty-value">{displayLine.quantity}개</span>
       <span className="total-amount-label">총금액은</span>
       <span className="total-amount-value">{totalLabel}</span>
       <div className="summary-line-bottom" />

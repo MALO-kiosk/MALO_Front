@@ -4,6 +4,7 @@ import { STAGE_HEIGHT, STAGE_WIDTH } from '@/config/stage'
 import type { OrderLineDraft } from '@/lib/orderLineDraft'
 import {
   createDefaultOrderLineDraft,
+  enrichOrderLineFromCatalog,
   orderLineFromCartItem,
 } from '@/lib/orderLineDraft'
 import { CommonOptionScreen } from '@/features/common-option'
@@ -83,11 +84,13 @@ export default function App() {
 
   const goEasyOrderConfirm = useCallback(() => {
     orderConfirmSource.current = 'order-confirm-2'
+    setEasyOrderLine((prev) => enrichOrderLineFromCatalog(prev))
     setPage('order-confirm-2')
   }, [])
 
   const goCommonOrderConfirm = useCallback(() => {
     orderConfirmSource.current = 'order-confirm'
+    setCommonOrderLine((prev) => enrichOrderLineFromCatalog(prev))
     setPage('order-confirm')
   }, [])
 
@@ -112,8 +115,10 @@ export default function App() {
           <EasyMenuSelectScreen
             onGoHome={goHome}
             onOrder={(items) => {
-              const last = items[items.length - 1]
-              if (last) setEasyOrderLine(orderLineFromCartItem(last))
+              if (items.length === 0) return
+              const ordered =
+                items.length === 1 ? items[0]! : items[items.length - 1]!
+              setEasyOrderLine(orderLineFromCartItem(ordered))
               setPage('easy-option')
             }}
           />
@@ -217,7 +222,10 @@ export default function App() {
       case 'stamp-input':
         return (
           <OrderFlowShell onHome={goHome}>
-            <StampInput onNext={() => setPage('stamp')} />
+            <StampInput
+              onNext={() => setPage('stamp')}
+              onSkip={() => setPage('order-complete-receipt')}
+            />
           </OrderFlowShell>
         )
       case 'stamp':

@@ -4,6 +4,17 @@
   font-family: "Pretendard Variable", Pretendard, sans-serif !important;
 }
 
+/* 딤은 바깥만 — 카드·내부는 오버레이 위에 밝게 */
+.order-complete-alarm-view.stamp-progress-view .complete-card.custom-complete-card {
+  z-index: 10001;
+  background: #fff;
+}
+
+.order-complete-alarm-view .stamp-progress-card-inner {
+  background: #fff;
+  border-radius: 36px;
+}
+
 /* 배경 및 카드 레이아웃 */
 .complete-page {
   position: fixed;

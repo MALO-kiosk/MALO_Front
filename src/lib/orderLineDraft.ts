@@ -1,5 +1,6 @@
 import menuStrawberryImg from '@/assets/images/menu_StrawberryMatcha.png'
 import type { EasyCartLineItem } from '@/components/common'
+import { getMenuProduct } from '@/data/menuCatalog'
 
 export type TempChoice = 'ice' | 'hot'
 export type SizeChoice = 'regular' | 'large'
@@ -49,14 +50,31 @@ export function createDefaultOrderLineDraft(): OrderLineDraft {
 }
 
 export function orderLineFromCartItem(item: EasyCartLineItem): OrderLineDraft {
+  const product = getMenuProduct(item.id)
   return {
     ...createDefaultOrderLineDraft(),
     id: item.id,
-    name: item.name,
-    imageSrc: item.imageSrc,
-    unitPriceWon: item.unitPriceWon,
+    name: product?.name ?? item.name,
+    imageSrc: product?.imageSrc ?? item.imageSrc,
+    unitPriceWon: product?.unitPriceWon ?? item.unitPriceWon,
     quantity: item.quantity,
   }
+}
+
+/** 메뉴 카탈로그 기준으로 이름·이미지·단가 동기화 */
+export function enrichOrderLineFromCatalog(line: OrderLineDraft): OrderLineDraft {
+  const product = getMenuProduct(line.id)
+  if (!product) return line
+  return {
+    ...line,
+    name: product.name,
+    imageSrc: product.imageSrc,
+    unitPriceWon: product.unitPriceWon,
+  }
+}
+
+export function orderLineDisplayName(line: OrderLineDraft): string {
+  return getMenuProduct(line.id)?.name ?? line.name
 }
 
 export function computeAdditionalWon(line: OrderLineDraft): number {

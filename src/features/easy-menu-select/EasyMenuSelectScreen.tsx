@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from 'react'
-import menuStrawberryImg from '@/assets/images/menu_StrawberryMatcha.png'
 import {
   AISpeechDisplay,
   EasyCartBar,
@@ -10,15 +9,18 @@ import {
   ProgressBar,
   TopWhitePanel,
   type EasyCartLineItem,
+  type MenuCategorySelection,
 } from '@/components/common'
+import {
+  MENU_CATALOG,
+  filterMenuByCategory,
+  menuProductPriceLabel,
+  type MenuProduct,
+} from '@/data/menuCatalog'
 import './EasyMenuSelectScreen.css'
 
-const MENU_STRAWBERRY = {
-  id: 'strawberry-matcha',
-  name: '스트로베리말차',
-  unitPriceWon: 3900,
-  imageSrc: menuStrawberryImg,
-}
+const COLS = 3
+const MAX_ROWS = 2
 
 export type EasyMenuSelectScreenProps = {
   /** 처음으로 → 홈 */
@@ -32,18 +34,43 @@ export function EasyMenuSelectScreen({
   onOrder,
 }: EasyMenuSelectScreenProps) {
   const [cartItems, setCartItems] = useState<EasyCartLineItem[]>([])
+  const [categorySelection, setCategorySelection] =
+    useState<MenuCategorySelection>({
+      menuCategory: 'recommended',
+      coffeeDetail: 'coffee',
+    })
 
-  const addStrawberryToCart = useCallback(() => {
+  const visibleProducts = useMemo(
+    () => filterMenuByCategory(MENU_CATALOG, categorySelection),
+    [categorySelection],
+  )
+
+  const productRows = useMemo(() => {
+    const capped = visibleProducts.slice(0, COLS * MAX_ROWS)
+    const rows: MenuProduct[][] = []
+    for (let i = 0; i < capped.length; i += COLS) {
+      rows.push(capped.slice(i, i + COLS))
+    }
+    return rows
+  }, [visibleProducts])
+
+  const addProductToCart = useCallback((product: MenuProduct) => {
     setCartItems((prev) => {
-      const i = prev.findIndex((x) => x.id === MENU_STRAWBERRY.id)
+      const i = prev.findIndex((x) => x.id === product.id)
       if (i === -1) {
-        return [...prev, { ...MENU_STRAWBERRY, quantity: 1 }]
+        return [
+          ...prev,
+          {
+            id: product.id,
+            name: product.name,
+            unitPriceWon: product.unitPriceWon,
+            imageSrc: product.imageSrc,
+            quantity: 1,
+          },
+        ]
       }
       const next = [...prev]
-      next[i] = {
-        ...next[i],
-        quantity: next[i].quantity + 1,
-      }
+      next[i] = { ...next[i], quantity: next[i].quantity + 1 }
       return next
     })
   }, [])
@@ -97,15 +124,18 @@ export function EasyMenuSelectScreen({
       />
       <OutlineFrame variant="staff" className="easy-menu-select__staff-frame" />
       <TopWhitePanel as="main" autoHeight minHeightPx={287}>
-        <MenuCategoryTabs />
+        <MenuCategoryTabs onSelectionChange={setCategorySelection} />
       </TopWhitePanel>
       <div className="easy-menu-select__menu-grid">
-        {Array.from({ length: 2 }, (_, row) => (
-          <div key={row} className="easy-menu-select__menu-row">
-            {Array.from({ length: 3 }, (_, i) => (
+        {productRows.map((row, rowIndex) => (
+          <div key={rowIndex} className="easy-menu-select__menu-row">
+            {row.map((product) => (
               <EasyMenu
-                key={`${row}-${i}`}
-                onSelect={addStrawberryToCart}
+                key={product.id}
+                name={product.name}
+                price={menuProductPriceLabel(product.unitPriceWon)}
+                imageSrc={product.imageSrc}
+                onSelect={() => addProductToCart(product)}
               />
             ))}
           </div>

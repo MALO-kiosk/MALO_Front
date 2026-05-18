@@ -1,5 +1,6 @@
-import '../../styles/PaymentSelect.css';
-import OrderProcess from '../../components/common/Orderprocess';
+import { TopWhitePanel } from '@/components/common'
+import '../../styles/PaymentSelect.css'
+import OrderProcess from '../../components/common/Orderprocess'
 import payIcon from '../../assets/icons/pay.svg';
 import pay2Icon from '../../assets/icons/pay2.svg';
 import pay3Icon from '../../assets/icons/pay3.svg';
@@ -8,11 +9,12 @@ import pay5Icon from '../../assets/icons/pay5.svg';
 
 export default function PaymentSelect({ onNext, onPrev }: any) {
   return (
-    <div className="complete-page">
-      <OrderProcess 
-        step={2} // 결제하기 단계 고정
-        steps={['메뉴선택', '결제하기', '적립하기', '주문완료']} 
+    <div className="complete-page payment-select-page">
+      <OrderProcess
+        step={2}
+        steps={['메뉴선택', '결제하기', '적립하기', '주문완료']}
       />
+      <TopWhitePanel className="payment-select-page__panel" heightPx={269} />
 
       <div className="complete-card">
         <h1 className="complete-title">주문 내용을 확인해 주세요!</h1>

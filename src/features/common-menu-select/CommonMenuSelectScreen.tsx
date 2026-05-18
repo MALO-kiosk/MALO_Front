@@ -6,15 +6,22 @@ import {
   ProgressBar,
   TopWhitePanel,
   type EasyCartLineItem,
+  type MenuCategorySelection,
 } from '@/components/common'
+import {
+  MENU_CATALOG,
+  filterMenuByCategory,
+  menuProductPriceLabel,
+  menuProductToCartLine,
+  type MenuProduct,
+} from '@/data/menuCatalog'
 import { CommonMenuBottomCartRow } from './CommonMenuBottomCartRow'
 import { CommonMenuBottomPanel } from './CommonMenuBottomPanel'
 import { CommonMenuProductCard } from './CommonMenuProductCard'
-import {
-  COMMON_MENU_DUMMY_PRODUCT,
-  commonMenuDummyCartLine,
-} from './commonMenuDummy'
 import './CommonMenuSelectScreen.css'
+
+const COLS = 4
+const MAX_ROWS = 2
 
 export type CommonMenuSelectScreenProps = {
   /** 처음으로 → 홈 */
@@ -28,11 +35,30 @@ export function CommonMenuSelectScreen({
   onOrder,
 }: CommonMenuSelectScreenProps) {
   const [cartLine, setCartLine] = useState<EasyCartLineItem | null>(null)
+  const [categorySelection, setCategorySelection] =
+    useState<MenuCategorySelection>({
+      menuCategory: 'recommended',
+      coffeeDetail: 'coffee',
+    })
 
-  const handleSelectMenu = useCallback(() => {
+  const visibleProducts = useMemo(
+    () => filterMenuByCategory(MENU_CATALOG, categorySelection),
+    [categorySelection],
+  )
+
+  const productRows = useMemo(() => {
+    const capped = visibleProducts.slice(0, COLS * MAX_ROWS)
+    const rows: MenuProduct[][] = []
+    for (let i = 0; i < capped.length; i += COLS) {
+      rows.push(capped.slice(i, i + COLS))
+    }
+    return rows
+  }, [visibleProducts])
+
+  const handleSelectMenu = useCallback((product: MenuProduct) => {
     setCartLine((prev) => {
-      if (!prev || prev.id !== COMMON_MENU_DUMMY_PRODUCT.id) {
-        return commonMenuDummyCartLine(1)
+      if (!prev || prev.id !== product.id) {
+        return menuProductToCartLine(product, 1)
       }
       return { ...prev, quantity: prev.quantity + 1 }
     })
@@ -76,18 +102,18 @@ export function CommonMenuSelectScreen({
       />
       <OutlineFrame variant="staff" className="common-menu-select__staff-frame" />
       <TopWhitePanel as="main" autoHeight minHeightPx={287}>
-        <MenuCategoryTabs />
+        <MenuCategoryTabs onSelectionChange={setCategorySelection} />
       </TopWhitePanel>
       <div className="common-menu-select__product-grid">
-        {Array.from({ length: 2 }, (_, row) => (
-          <div key={row} className="common-menu-select__product-row">
-            {Array.from({ length: 4 }, (_, i) => (
+        {productRows.map((row, rowIndex) => (
+          <div key={rowIndex} className="common-menu-select__product-row">
+            {row.map((product) => (
               <CommonMenuProductCard
-                key={`${row}-${i}`}
-                imageSrc={COMMON_MENU_DUMMY_PRODUCT.imageSrc}
-                name={COMMON_MENU_DUMMY_PRODUCT.name}
-                priceLabel={COMMON_MENU_DUMMY_PRODUCT.priceLabel}
-                onSelect={handleSelectMenu}
+                key={product.id}
+                imageSrc={product.imageSrc}
+                name={product.name}
+                priceLabel={menuProductPriceLabel(product.unitPriceWon)}
+                onSelect={() => handleSelectMenu(product)}
               />
             ))}
           </div>
