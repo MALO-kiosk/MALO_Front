@@ -32,6 +32,8 @@ export type EasyOptionScreenProps = {
   onAddMenu?: () => void
   /** 맞춤 옵션 화면으로 이동 — `easy-option__custom-btn` */
   onOpenCustomOption: () => void
+  /** 직원 호출 */
+  onStaffCall?: () => void
 }
 
 export function EasyOptionScreen({
@@ -42,8 +44,9 @@ export function EasyOptionScreen({
   onCancelOrder,
   onAddMenu,
   onOpenCustomOption,
+  onStaffCall,
 }: EasyOptionScreenProps) {
-  const { temp, size, cup } = orderLine
+  const { temp, size, cup, only_cold } = orderLine
 
   return (
     <div className="easy-option">
@@ -52,7 +55,7 @@ export function EasyOptionScreen({
         className="easy-option__back-frame"
         onHomeClick={onGoHome}
       />
-      <OutlineFrame variant="staff" className="easy-option__staff-frame" />
+      <OutlineFrame variant="staff" className="easy-option__staff-frame" onStaffCall={onStaffCall} />
       <TopWhitePanel className="easy-option__panel" heightPx={269}>
         <h1 className="easy-option__title">{optionTitle}</h1>
       </TopWhitePanel>
@@ -68,8 +71,9 @@ export function EasyOptionScreen({
         </button>
         <button
           type="button"
-          className={`easy-option__temp-btn ${temp === 'hot' ? 'easy-option__temp-btn--selected' : 'easy-option__temp-btn--unselected'}`}
+          className={`easy-option__temp-btn ${only_cold ? 'easy-option__temp-btn--disabled' : temp === 'hot' ? 'easy-option__temp-btn--selected' : 'easy-option__temp-btn--unselected'}`}
           aria-pressed={temp === 'hot'}
+          disabled={only_cold}
           onClick={() => onOrderLineChange({ temp: 'hot' })}
         >
           HOT

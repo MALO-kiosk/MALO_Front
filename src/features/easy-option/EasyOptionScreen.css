@@ -115,6 +115,14 @@
   font-weight: 400;
 }
 
+.easy-option__temp-btn--disabled {
+  border: 2px solid #d0d0d0;
+  background: #f0f0f0;
+  color: #b0b0b0;
+  font-weight: 400;
+  cursor: not-allowed;
+}
+
 /* 머그컵 버튼 하단 + 77px, 가로 가운데 */
 .easy-option__custom-btn {
   position: absolute;

@@ -15,6 +15,8 @@ export type MenuProduct = {
   menuCategories: [MenuCategoryId, MenuCategoryId]
   /** 커피/음료 하위 탭 — 항목당 2개 (커피·음료 상위 탭일 때만 사용) */
   coffeeDetailCategories: [CoffeeDetailCategoryId, CoffeeDetailCategoryId]
+  /** true면 ICE만 선택 가능, HOT 비활성화 */
+  only_cold: boolean
 }
 
 function product(
@@ -23,6 +25,7 @@ function product(
   unitPriceWon: number,
   menuCategories: [MenuCategoryId, MenuCategoryId],
   coffeeDetailCategories: [CoffeeDetailCategoryId, CoffeeDetailCategoryId],
+  only_cold = false,
 ): MenuProduct {
   return {
     id,
@@ -31,6 +34,7 @@ function product(
     unitPriceWon,
     menuCategories,
     coffeeDetailCategories,
+    only_cold,
   }
 }
 
@@ -122,14 +126,24 @@ export const MENU_CATALOG: MenuProduct[] = [
   ),
 ]
 
+export function isDesertProduct(product: MenuProduct): boolean {
+  return product.menuCategories.includes('dessert')
+}
+
 export function filterMenuByCategory(
   products: MenuProduct[],
   { menuCategory, coffeeDetail }: MenuCategorySelection,
 ): MenuProduct[] {
   return products.filter((item) => {
-    if (!item.menuCategories.includes(menuCategory)) return false
+    if (!item.menuCategories?.includes(menuCategory)) return false
     if (menuCategory === 'coffee') {
-      return item.coffeeDetailCategories.includes(coffeeDetail)
+      return item.coffeeDetailCategories?.includes(coffeeDetail) ?? false
+    }
+    if (menuCategory === 'recommended' || menuCategory === 'new') {
+      if (coffeeDetail === 'dessert') {
+        return item.menuCategories?.includes('dessert') ?? false
+      }
+      return item.coffeeDetailCategories?.includes(coffeeDetail) ?? false
     }
     return true
   })

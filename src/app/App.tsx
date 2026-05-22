@@ -1,12 +1,17 @@
 import { useCallback, useRef, useState } from 'react'
+import '@/lib/useMenuCatalog'
 import { StageViewport } from '@/components/layout'
 import { STAGE_HEIGHT, STAGE_WIDTH } from '@/config/stage'
+import type { EasyCartLineItem } from '@/components/common'
 import type { OrderLineDraft } from '@/lib/orderLineDraft'
 import {
   createDefaultOrderLineDraft,
   enrichOrderLineFromCatalog,
-  orderLineFromCartItem,
+  orderLineDraftToCartItem,
+  orderLineFromProduct,
 } from '@/lib/orderLineDraft'
+import { isDesertProduct, type MenuProduct } from '@/data/menuCatalog'
+import { saveOrder, saveStampAndGetCount, type PlaceType } from '@/lib/orderService'
 import { CommonOptionScreen } from '@/features/common-option'
 import { CommonMenuSelectScreen } from '@/features/common-menu-select'
 import { EasyMenuSelectScreen } from '@/features/easy-menu-select'
@@ -50,58 +55,133 @@ const stagePageStyle = {
   flexShrink: 0,
 }
 
+function mergeIntoDrafts(
+  prev: OrderLineDraft[],
+  draft: OrderLineDraft,
+): OrderLineDraft[] {
+  const i = prev.findIndex((x) => x.id === draft.id)
+  if (i === -1) return [...prev, draft]
+  const next = [...prev]
+  next[i] = { ...next[i]!, quantity: next[i]!.quantity + draft.quantity }
+  return next
+}
+
 export default function App() {
   const [page, setPage] = useState<AppPage>('home')
-  /** 맞춤 옵션 화면에서 주문취소 시 복귀 경로 */
-  const customOptionReturnPage = useRef<
-    Extract<AppPage, 'easy-menu-select' | 'easy-option' | 'common-option'>
-  >('easy-menu-select')
+
+  // ── 주문 관련 상태 ──────────────────────────────────────────────────────
+  const [placeType, setPlaceType] = useState<PlaceType>('dine_in')
+  const currentOrderId = useRef<string | null>(null)
+  const [stampCount, setStampCount] = useState(0)
+
+  // ── 쉬운 모드 ──────────────────────────────────────────────────────────
   const [easyOrderLine, setEasyOrderLine] = useState<OrderLineDraft>(
     createDefaultOrderLineDraft,
   )
-  const [commonOrderLine, setCommonOrderLine] = useState<OrderLineDraft>(
-    createDefaultOrderLineDraft,
-  )
+  const [easyCartDrafts, setEasyCartDrafts] = useState<OrderLineDraft[]>([])
 
   const patchEasyOrderLine = useCallback((patch: Partial<OrderLineDraft>) => {
     setEasyOrderLine((prev) => ({ ...prev, ...patch }))
   }, [])
 
+  const addToEasyCart = useCallback((draft: OrderLineDraft) => {
+    setEasyCartDrafts((prev) => mergeIntoDrafts(prev, draft))
+  }, [])
+
+  const easyCartItems: EasyCartLineItem[] = easyCartDrafts.map(orderLineDraftToCartItem)
+
+  // ── 일반 모드 ──────────────────────────────────────────────────────────
+  const [commonOrderLine, setCommonOrderLine] = useState<OrderLineDraft>(
+    createDefaultOrderLineDraft,
+  )
+  const [commonCartDrafts, setCommonCartDrafts] = useState<OrderLineDraft[]>([])
+
   const patchCommonOrderLine = useCallback((patch: Partial<OrderLineDraft>) => {
     setCommonOrderLine((prev) => ({ ...prev, ...patch }))
   }, [])
-  /** 결제 화면 이전 → 어느 주문 확인으로 돌아갈지 */
+
+  const addToCommonCart = useCallback((draft: OrderLineDraft) => {
+    setCommonCartDrafts((prev) => mergeIntoDrafts(prev, draft))
+  }, [])
+
+  const commonCartLines: EasyCartLineItem[] = commonCartDrafts.map(orderLineDraftToCartItem)
+
+  // ── 공통 ref ───────────────────────────────────────────────────────────
   const orderConfirmSource = useRef<OrderConfirmPage>('order-confirm-2')
-  /** 주문 확인 이전 → 옵션 또는 맞춤 옵션 */
-  const easyOrderConfirmPrev = useRef<
-    Extract<AppPage, 'easy-option' | 'easy-custom-option'>
-  >('easy-option')
-  const commonOrderConfirmPrev = useRef<
-    Extract<AppPage, 'common-option' | 'common-custom-option'>
-  >('common-option')
+  const customOptionReturnPage = useRef<
+    Extract<AppPage, 'easy-menu-select' | 'easy-option' | 'common-option'>
+  >('easy-menu-select')
 
-  const goHome = useCallback(() => setPage('home'), [])
-
-  const goEasyOrderConfirm = useCallback(() => {
-    orderConfirmSource.current = 'order-confirm-2'
-    setEasyOrderLine((prev) => enrichOrderLineFromCatalog(prev))
-    setPage('order-confirm-2')
+  // ── 내비게이션 ─────────────────────────────────────────────────────────
+  const goHome = useCallback(() => {
+    setEasyCartDrafts([])
+    setCommonCartDrafts([])
+    currentOrderId.current = null
+    setPage('home')
   }, [])
 
-  const goCommonOrderConfirm = useCallback(() => {
-    orderConfirmSource.current = 'order-confirm'
-    setCommonOrderLine((prev) => enrichOrderLineFromCatalog(prev))
-    setPage('order-confirm')
+  const callStaff = useCallback(() => {
+    alert('직원을 호출했습니다.\n잠시만 기다려 주세요.')
   }, [])
 
-  const goPayment = useCallback(() => setPage('payment'), [])
+  // 결제 완료 → 주문 DB 저장 후 stamp-input으로 이동
+  const handlePaymentDone = useCallback(async () => {
+    const lines =
+      orderConfirmSource.current === 'order-confirm-2'
+        ? easyCartDrafts
+        : commonCartDrafts
+    const orderId = await saveOrder(placeType, lines)
+    currentOrderId.current = orderId
+    setPage('stamp-input')
+  }, [placeType, easyCartDrafts, commonCartDrafts])
 
+  // 스탬프 적립 → DB upsert 후 stamp 화면으로
+  const handleStampSubmit = useCallback(async (phoneNumber: string) => {
+    const orderId = currentOrderId.current
+    if (!orderId) { setPage('stamp'); return }
+    const count = await saveStampAndGetCount(orderId, phoneNumber)
+    setStampCount(count)
+    setPage('stamp')
+  }, [])
+
+  // ── 상품 선택 처리 ─────────────────────────────────────────────────────
+  const handleEasySelectProduct = useCallback(
+    (product: MenuProduct) => {
+      if (isDesertProduct(product)) {
+        addToEasyCart(orderLineFromProduct(product))
+      } else {
+        setEasyOrderLine(orderLineFromProduct(product))
+        setPage('easy-option')
+      }
+    },
+    [addToEasyCart],
+  )
+
+  const handleCommonSelectProduct = useCallback(
+    (product: MenuProduct) => {
+      if (isDesertProduct(product)) {
+        addToCommonCart(orderLineFromProduct(product))
+      } else {
+        setCommonOrderLine(orderLineFromProduct(product))
+        setPage('common-option')
+      }
+    },
+    [addToCommonCart],
+  )
+
+  // ── 렌더 ───────────────────────────────────────────────────────────────
   const renderPage = () => {
     switch (page) {
       case 'home':
         return (
-          <HomeScreen onPlaceTypeSelected={() => setPage('mode-select')} />
+          <HomeScreen
+            onPlaceTypeSelected={(type) => {
+              setPlaceType(type)
+              setPage('mode-select')
+            }}
+          />
         )
+
       case 'mode-select':
         return (
           <ModeSelectScreen
@@ -110,29 +190,53 @@ export default function App() {
             onSelectNormal={() => setPage('common-menu-select')}
           />
         )
+
+      // ── 쉬운 모드 ────────────────────────────────────────────────────
       case 'easy-menu-select':
         return (
           <EasyMenuSelectScreen
             onGoHome={goHome}
-            onOrder={(items) => {
-              if (items.length === 0) return
-              const ordered =
-                items.length === 1 ? items[0]! : items[items.length - 1]!
-              setEasyOrderLine(orderLineFromCartItem(ordered))
-              setPage('easy-option')
+            onStaffCall={callStaff}
+            cartItems={easyCartItems}
+            onIncrementCart={(id) =>
+              setEasyCartDrafts((prev) =>
+                prev.map((x) =>
+                  x.id === id ? { ...x, quantity: x.quantity + 1 } : x,
+                ),
+              )
+            }
+            onDecrementCart={(id) =>
+              setEasyCartDrafts((prev) =>
+                prev.flatMap((x) => {
+                  if (x.id !== id) return [x]
+                  if (x.quantity <= 1) return []
+                  return [{ ...x, quantity: x.quantity - 1 }]
+                }),
+              )
+            }
+            onRemoveFromCart={(id) =>
+              setEasyCartDrafts((prev) => prev.filter((x) => x.id !== id))
+            }
+            onSelectProduct={handleEasySelectProduct}
+            onOrder={() => {
+              if (easyCartDrafts.length === 0) return
+              orderConfirmSource.current = 'order-confirm-2'
+              setPage('order-confirm-2')
             }}
           />
         )
+
       case 'easy-option':
         return (
           <EasyOptionScreen
             orderLine={easyOrderLine}
             onOrderLineChange={patchEasyOrderLine}
             onGoHome={goHome}
+            onStaffCall={callStaff}
             onCancelOrder={() => setPage('easy-menu-select')}
             onAddMenu={() => {
-              easyOrderConfirmPrev.current = 'easy-option'
-              goEasyOrderConfirm()
+              addToEasyCart(easyOrderLine)
+              setPage('easy-menu-select')
             }}
             onOpenCustomOption={() => {
               customOptionReturnPage.current = 'easy-option'
@@ -140,53 +244,87 @@ export default function App() {
             }}
           />
         )
+
       case 'easy-custom-option':
         return (
           <EasyCustomOptionScreen
             orderLine={easyOrderLine}
             onOrderLineChange={patchEasyOrderLine}
             onGoHome={goHome}
+            onStaffCall={callStaff}
             onCancelOrder={() => setPage(customOptionReturnPage.current)}
             onAddMenu={() => {
-              easyOrderConfirmPrev.current = 'easy-custom-option'
-              goEasyOrderConfirm()
+              addToEasyCart(easyOrderLine)
+              setPage('easy-menu-select')
             }}
           />
         )
+
       case 'order-confirm-2':
         return (
           <OrderFlowShell onHome={goHome}>
             <OrderConfirm2
-              line={easyOrderLine}
-              onPrev={() => setPage(easyOrderConfirmPrev.current)}
-              onNext={goPayment}
+              lines={easyCartDrafts.map(enrichOrderLineFromCatalog)}
+              onPrev={() => setPage('easy-menu-select')}
+              onNext={() => {
+                orderConfirmSource.current = 'order-confirm-2'
+                setPage('payment')
+              }}
             />
           </OrderFlowShell>
         )
+
+      // ── 일반 모드 ────────────────────────────────────────────────────
       case 'common-menu-select':
         return (
           <CommonMenuSelectScreen
             onGoHome={goHome}
-            onOrder={(line) => {
-              setCommonOrderLine(orderLineFromCartItem(line))
-              setPage('common-option')
+            onStaffCall={callStaff}
+            cartLines={commonCartLines}
+            onIncrementCart={(id) =>
+              setCommonCartDrafts((prev) =>
+                prev.map((x) =>
+                  x.id === id ? { ...x, quantity: x.quantity + 1 } : x,
+                ),
+              )
+            }
+            onDecrementCart={(id) =>
+              setCommonCartDrafts((prev) =>
+                prev.flatMap((x) => {
+                  if (x.id !== id) return [x]
+                  if (x.quantity <= 1) return []
+                  return [{ ...x, quantity: x.quantity - 1 }]
+                }),
+              )
+            }
+            onRemoveFromCart={(id) =>
+              setCommonCartDrafts((prev) => prev.filter((x) => x.id !== id))
+            }
+            onSelectProduct={handleCommonSelectProduct}
+            onOrder={() => {
+              if (commonCartDrafts.length === 0) return
+              orderConfirmSource.current = 'order-confirm'
+              setPage('order-confirm')
             }}
           />
         )
+
       case 'common-option':
         return (
           <CommonOptionScreen
             orderLine={commonOrderLine}
             onOrderLineChange={patchCommonOrderLine}
             onGoHome={goHome}
+            onStaffCall={callStaff}
             onCancelOrder={() => setPage('common-menu-select')}
             onAddMenu={() => {
-              commonOrderConfirmPrev.current = 'common-option'
-              goCommonOrderConfirm()
+              addToCommonCart(commonOrderLine)
+              setPage('common-menu-select')
             }}
             onOpenCustomOption={() => setPage('common-custom-option')}
           />
         )
+
       case 'common-custom-option':
         return (
           <CommonCustomOptionScreen
@@ -195,49 +333,58 @@ export default function App() {
             onGoHome={goHome}
             onCancelOrder={() => setPage('common-option')}
             onAddMenu={() => {
-              commonOrderConfirmPrev.current = 'common-custom-option'
-              goCommonOrderConfirm()
+              addToCommonCart(commonOrderLine)
+              setPage('common-menu-select')
             }}
           />
         )
+
       case 'order-confirm':
         return (
           <OrderFlowShell onHome={goHome}>
             <OrderConfirm
-              line={commonOrderLine}
-              onPrev={() => setPage(commonOrderConfirmPrev.current)}
-              onNext={goPayment}
+              lines={commonCartDrafts.map(enrichOrderLineFromCatalog)}
+              onPrev={() => setPage('common-menu-select')}
+              onNext={() => {
+                orderConfirmSource.current = 'order-confirm'
+                setPage('payment')
+              }}
             />
           </OrderFlowShell>
         )
+
+      // ── 결제·적립·완료 ────────────────────────────────────────────────
       case 'payment':
         return (
           <OrderFlowShell onHome={goHome}>
             <PaymentSelect
-              onNext={() => setPage('stamp-input')}
+              onNext={handlePaymentDone}
               onPrev={() => setPage(orderConfirmSource.current)}
             />
           </OrderFlowShell>
         )
+
       case 'stamp-input':
         return (
           <OrderFlowShell onHome={goHome}>
             <StampInput
-              onNext={() => setPage('stamp')}
+              onNext={handleStampSubmit}
               onSkip={() => setPage('order-complete-receipt')}
             />
           </OrderFlowShell>
         )
+
       case 'stamp':
         return (
           <OrderFlowShell onHome={goHome}>
             <StampProgress
-              currentCount={5}
+              currentCount={stampCount}
               totalCount={10}
               onNext={() => setPage('order-complete-receipt')}
             />
           </OrderFlowShell>
         )
+
       case 'order-complete-receipt':
         return (
           <OrderFlowShell onHome={goHome}>
@@ -246,12 +393,14 @@ export default function App() {
             />
           </OrderFlowShell>
         )
+
       case 'order-complete-alarm':
         return (
           <OrderFlowShell onHome={goHome}>
             <OrderComplete_alarm onHome={goHome} />
           </OrderFlowShell>
         )
+
       default:
         return null
     }

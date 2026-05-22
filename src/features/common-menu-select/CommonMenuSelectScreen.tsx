@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   MenuCategoryTabs,
   OrderTotalBar,
@@ -9,12 +9,11 @@ import {
   type MenuCategorySelection,
 } from '@/components/common'
 import {
-  MENU_CATALOG,
   filterMenuByCategory,
   menuProductPriceLabel,
-  menuProductToCartLine,
   type MenuProduct,
 } from '@/data/menuCatalog'
+import { useMenuCatalog } from '@/lib/useMenuCatalog'
 import { CommonMenuBottomCartRow } from './CommonMenuBottomCartRow'
 import { CommonMenuBottomPanel } from './CommonMenuBottomPanel'
 import { CommonMenuProductCard } from './CommonMenuProductCard'
@@ -24,17 +23,28 @@ const COLS = 4
 const MAX_ROWS = 2
 
 export type CommonMenuSelectScreenProps = {
-  /** 처음으로 → 홈 */
   onGoHome?: () => void
-  /** 주문하기 → 담은 메뉴와 함께 옵션 화면 */
-  onOrder?: (line: EasyCartLineItem) => void
+  onStaffCall?: () => void
+  /** App.tsx에서 관리하는 카트 항목 목록 */
+  cartLines: EasyCartLineItem[]
+  onIncrementCart: (id: string) => void
+  onDecrementCart: (id: string) => void
+  onRemoveFromCart: (id: string) => void
+  onSelectProduct: (product: MenuProduct) => void
+  onOrder?: () => void
 }
 
 export function CommonMenuSelectScreen({
   onGoHome,
+  onStaffCall,
+  cartLines,
+  onIncrementCart,
+  onDecrementCart,
+  onRemoveFromCart,
+  onSelectProduct,
   onOrder,
 }: CommonMenuSelectScreenProps) {
-  const [cartLine, setCartLine] = useState<EasyCartLineItem | null>(null)
+  const { products } = useMenuCatalog()
   const [categorySelection, setCategorySelection] =
     useState<MenuCategorySelection>({
       menuCategory: 'recommended',
@@ -42,8 +52,8 @@ export function CommonMenuSelectScreen({
     })
 
   const visibleProducts = useMemo(
-    () => filterMenuByCategory(MENU_CATALOG, categorySelection),
-    [categorySelection],
+    () => filterMenuByCategory(products, categorySelection),
+    [products, categorySelection],
   )
 
   const productRows = useMemo(() => {
@@ -55,43 +65,18 @@ export function CommonMenuSelectScreen({
     return rows
   }, [visibleProducts])
 
-  const handleSelectMenu = useCallback((product: MenuProduct) => {
-    setCartLine((prev) => {
-      if (!prev || prev.id !== product.id) {
-        return menuProductToCartLine(product, 1)
-      }
-      return { ...prev, quantity: prev.quantity + 1 }
-    })
-  }, [])
+  const totalCount = useMemo(
+    () => cartLines.reduce((s, x) => s + x.quantity, 0),
+    [cartLines],
+  )
 
-  const handleIncrement = useCallback(() => {
-    setCartLine((prev) =>
-      prev ? { ...prev, quantity: prev.quantity + 1 } : null,
-    )
-  }, [])
-
-  const handleDecrement = useCallback(() => {
-    setCartLine((prev) => {
-      if (!prev) return null
-      if (prev.quantity <= 1) return null
-      return { ...prev, quantity: prev.quantity - 1 }
-    })
-  }, [])
-
-  const handleRemoveLine = useCallback(() => {
-    setCartLine(null)
-  }, [])
-
-  const totalCount = cartLine?.quantity ?? 0
   const totalPriceLabel = useMemo(() => {
-    if (!cartLine) return '0'
-    return (cartLine.unitPriceWon * cartLine.quantity).toLocaleString('ko-KR')
-  }, [cartLine])
-
-  const handleOrder = useCallback(() => {
-    if (!cartLine) return
-    onOrder?.(cartLine)
-  }, [cartLine, onOrder])
+    const total = cartLines.reduce(
+      (s, x) => s + x.unitPriceWon * x.quantity,
+      0,
+    )
+    return total.toLocaleString('ko-KR')
+  }, [cartLines])
 
   return (
     <div className="common-menu-select">
@@ -100,7 +85,11 @@ export function CommonMenuSelectScreen({
         className="common-menu-select__back-frame"
         onHomeClick={onGoHome}
       />
-      <OutlineFrame variant="staff" className="common-menu-select__staff-frame" />
+      <OutlineFrame
+        variant="staff"
+        className="common-menu-select__staff-frame"
+        onStaffCall={onStaffCall}
+      />
       <TopWhitePanel as="main" autoHeight minHeightPx={287}>
         <MenuCategoryTabs onSelectionChange={setCategorySelection} />
       </TopWhitePanel>
@@ -113,7 +102,7 @@ export function CommonMenuSelectScreen({
                 imageSrc={product.imageSrc}
                 name={product.name}
                 priceLabel={menuProductPriceLabel(product.unitPriceWon)}
-                onSelect={() => handleSelectMenu(product)}
+                onSelect={() => onSelectProduct(product)}
               />
             ))}
           </div>
@@ -121,19 +110,23 @@ export function CommonMenuSelectScreen({
       </div>
       <ProgressBar />
       <CommonMenuBottomPanel>
-        {cartLine ? (
+        {cartLines.map((line) => (
           <CommonMenuBottomCartRow
-            item={cartLine}
-            onIncrement={handleIncrement}
-            onDecrement={handleDecrement}
-            onRemoveLine={handleRemoveLine}
+            key={line.id}
+            item={line}
+            onIncrement={() => onIncrementCart(line.id)}
+            onDecrement={() => onDecrementCart(line.id)}
+            onRemoveLine={() => onRemoveFromCart(line.id)}
           />
-        ) : null}
+        ))}
       </CommonMenuBottomPanel>
       <OrderTotalBar
         totalCount={totalCount}
         totalPrice={totalPriceLabel}
-        onOrder={handleOrder}
+        onOrder={() => {
+          if (cartLines.length === 0) return
+          onOrder?.()
+        }}
       />
     </div>
   )

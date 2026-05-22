@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   AISpeechDisplay,
   EasyCartBar,
@@ -12,28 +12,40 @@ import {
   type MenuCategorySelection,
 } from '@/components/common'
 import {
-  MENU_CATALOG,
   filterMenuByCategory,
   menuProductPriceLabel,
   type MenuProduct,
 } from '@/data/menuCatalog'
+import { useMenuCatalog } from '@/lib/useMenuCatalog'
 import './EasyMenuSelectScreen.css'
 
 const COLS = 3
 const MAX_ROWS = 2
 
 export type EasyMenuSelectScreenProps = {
-  /** 처음으로 → 홈 */
   onGoHome?: () => void
-  /** 주문하기 → 장바구니 항목과 함께 다음 단계 */
-  onOrder?: (items: EasyCartLineItem[]) => void
+  onStaffCall?: () => void
+  /** App.tsx에서 관리하는 카트 (페이지 이동 시에도 유지) */
+  cartItems: EasyCartLineItem[]
+  onIncrementCart: (id: string) => void
+  onDecrementCart: (id: string) => void
+  onRemoveFromCart: (id: string) => void
+  /** 음료 → 옵션 화면, 디저트 → 즉시 카트 추가 를 App.tsx가 결정 */
+  onSelectProduct: (product: MenuProduct) => void
+  onOrder?: () => void
 }
 
 export function EasyMenuSelectScreen({
   onGoHome,
+  onStaffCall,
+  cartItems,
+  onIncrementCart,
+  onDecrementCart,
+  onRemoveFromCart,
+  onSelectProduct,
   onOrder,
 }: EasyMenuSelectScreenProps) {
-  const [cartItems, setCartItems] = useState<EasyCartLineItem[]>([])
+  const { products } = useMenuCatalog()
   const [categorySelection, setCategorySelection] =
     useState<MenuCategorySelection>({
       menuCategory: 'recommended',
@@ -41,8 +53,8 @@ export function EasyMenuSelectScreen({
     })
 
   const visibleProducts = useMemo(
-    () => filterMenuByCategory(MENU_CATALOG, categorySelection),
-    [categorySelection],
+    () => filterMenuByCategory(products, categorySelection),
+    [products, categorySelection],
   )
 
   const productRows = useMemo(() => {
@@ -54,66 +66,15 @@ export function EasyMenuSelectScreen({
     return rows
   }, [visibleProducts])
 
-  const addProductToCart = useCallback((product: MenuProduct) => {
-    setCartItems((prev) => {
-      const i = prev.findIndex((x) => x.id === product.id)
-      if (i === -1) {
-        return [
-          ...prev,
-          {
-            id: product.id,
-            name: product.name,
-            unitPriceWon: product.unitPriceWon,
-            imageSrc: product.imageSrc,
-            quantity: 1,
-          },
-        ]
-      }
-      const next = [...prev]
-      next[i] = { ...next[i], quantity: next[i].quantity + 1 }
-      return next
-    })
-  }, [])
-
-  const handleIncrement = useCallback((id: string) => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item,
-      ),
-    )
-  }, [])
-
-  const handleDecrement = useCallback((id: string) => {
-    setCartItems((prev) =>
-      prev.flatMap((item) => {
-        if (item.id !== id) return [item]
-        if (item.quantity <= 1) return []
-        return [{ ...item, quantity: item.quantity - 1 }]
-      }),
-    )
-  }, [])
-
-  const handleRemoveLine = useCallback((id: string) => {
-    setCartItems((prev) => prev.filter((x) => x.id !== id))
-  }, [])
-
   const totalCount = useMemo(
     () => cartItems.reduce((s, x) => s + x.quantity, 0),
     [cartItems],
   )
 
   const totalWon = useMemo(
-    () =>
-      cartItems.reduce(
-        (s, x) => s + x.unitPriceWon * x.quantity,
-        0,
-      ),
+    () => cartItems.reduce((s, x) => s + x.unitPriceWon * x.quantity, 0),
     [cartItems],
   )
-
-  const totalPriceLabel = totalWon.toLocaleString('ko-KR')
 
   return (
     <div className="easy-menu-select">
@@ -122,7 +83,11 @@ export function EasyMenuSelectScreen({
         className="easy-menu-select__back-frame"
         onHomeClick={onGoHome}
       />
-      <OutlineFrame variant="staff" className="easy-menu-select__staff-frame" />
+      <OutlineFrame
+        variant="staff"
+        className="easy-menu-select__staff-frame"
+        onStaffCall={onStaffCall}
+      />
       <TopWhitePanel as="main" autoHeight minHeightPx={287}>
         <MenuCategoryTabs onSelectionChange={setCategorySelection} />
       </TopWhitePanel>
@@ -135,7 +100,7 @@ export function EasyMenuSelectScreen({
                 name={product.name}
                 price={menuProductPriceLabel(product.unitPriceWon)}
                 imageSrc={product.imageSrc}
-                onSelect={() => addProductToCart(product)}
+                onSelect={() => onSelectProduct(product)}
               />
             ))}
           </div>
@@ -145,16 +110,16 @@ export function EasyMenuSelectScreen({
       <AISpeechDisplay />
       <EasyCartBar
         items={cartItems}
-        onIncrement={handleIncrement}
-        onDecrement={handleDecrement}
-        onRemoveLine={handleRemoveLine}
+        onIncrement={onIncrementCart}
+        onDecrement={onDecrementCart}
+        onRemoveLine={onRemoveFromCart}
       />
       <OrderTotalBar
         totalCount={totalCount}
-        totalPrice={totalPriceLabel}
+        totalPrice={totalWon.toLocaleString('ko-KR')}
         onOrder={() => {
           if (cartItems.length === 0) return
-          onOrder?.(cartItems)
+          onOrder?.()
         }}
       />
     </div>

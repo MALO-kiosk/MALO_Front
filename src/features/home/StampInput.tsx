@@ -4,9 +4,7 @@ import '../../styles/StampInput.css'
 import OrderProcess from '../../components/common/Orderprocess'
 
 type StampInputProps = {
-  /** 입력 완료 → 스탬프 적립 결과 */
-  onNext?: () => void
-  /** 적립안함 → 스탬프 적립 화면 건너뛰기 */
+  onNext?: (phoneNumber: string) => void
   onSkip?: () => void
 }
 
@@ -63,7 +61,7 @@ export default function StampInput({ onNext, onSkip }: StampInputProps) {
           <button type="button" className="no-btn" onClick={onSkip}>
             적립안함
           </button>
-          <button type="button" className="yes-btn" onClick={onNext}>
+          <button type="button" className="yes-btn" onClick={() => onNext?.(phoneNumber)}>
             입력 완료
           </button>
         </div>

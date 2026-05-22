@@ -1,6 +1,6 @@
 import menuStrawberryImg from '@/assets/images/menu_StrawberryMatcha.png'
 import type { EasyCartLineItem } from '@/components/common'
-import { getMenuProduct } from '@/data/menuCatalog'
+import { getMenuProduct, isDesertProduct, type MenuProduct } from '@/data/menuCatalog'
 
 export type TempChoice = 'ice' | 'hot'
 export type SizeChoice = 'regular' | 'large'
@@ -13,6 +13,8 @@ export type OrderLineDraft = {
   imageSrc: string
   unitPriceWon: number
   quantity: number
+  isDessert: boolean
+  only_cold: boolean
   temp: TempChoice
   size: SizeChoice
   cup: CupChoice
@@ -39,6 +41,8 @@ export function createDefaultOrderLineDraft(): OrderLineDraft {
     imageSrc: menuStrawberryImg,
     unitPriceWon: 3900,
     quantity: 1,
+    isDessert: false,
+    only_cold: false,
     temp: 'ice',
     size: 'regular',
     cup: 'mug',
@@ -58,6 +62,30 @@ export function orderLineFromCartItem(item: EasyCartLineItem): OrderLineDraft {
     imageSrc: product?.imageSrc ?? item.imageSrc,
     unitPriceWon: product?.unitPriceWon ?? item.unitPriceWon,
     quantity: item.quantity,
+    isDessert: product ? isDesertProduct(product) : false,
+  }
+}
+
+export function orderLineFromProduct(product: MenuProduct): OrderLineDraft {
+  return {
+    ...createDefaultOrderLineDraft(),
+    id: product.id,
+    name: product.name,
+    imageSrc: product.imageSrc,
+    unitPriceWon: product.unitPriceWon,
+    isDessert: isDesertProduct(product),
+    only_cold: product.only_cold,
+    temp: product.only_cold ? 'ice' : 'ice',
+  }
+}
+
+export function orderLineDraftToCartItem(line: OrderLineDraft): EasyCartLineItem {
+  return {
+    id: line.id,
+    name: line.name,
+    unitPriceWon: line.unitPriceWon,
+    imageSrc: line.imageSrc,
+    quantity: line.quantity,
   }
 }
 
@@ -86,8 +114,9 @@ export function computeLineTotalWon(line: OrderLineDraft): number {
   return line.unitPriceWon * line.quantity + computeAdditionalWon(line)
 }
 
-/** 주문 확인 화면 옵션 줄 — 예: ICE / R / 더 달게 / 화이트펄 */
+/** 주문 확인 화면 옵션 줄 — 예: ICE / R / 더 달게 / 화이트펄. 디저트는 빈 문자열 */
 export function formatOrderOptionLine(line: OrderLineDraft): string {
+  if (line.isDessert) return ''
   const parts: string[] = [
     line.temp === 'ice' ? 'ICE' : 'HOT',
     line.size === 'regular' ? 'R' : 'L',

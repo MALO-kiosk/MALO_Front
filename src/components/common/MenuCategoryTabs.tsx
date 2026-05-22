@@ -3,18 +3,15 @@ import './MenuCategoryTabs.css'
 
 export type MenuCategoryId = 'recommended' | 'new' | 'coffee' | 'dessert'
 
-export type CoffeeDetailCategoryId = 'coffee' | 'decaf' | 'drink' | 'tea'
+export type CoffeeDetailCategoryId = 'coffee' | 'decaf' | 'drink' | 'tea' | 'dessert'
 
 type TabDef = {
   id: MenuCategoryId
   label: string
-  /** 디저트만 비선택 시 #000 / 400 */
   dessertDefault: boolean
-  /** 이 탭 왼쪽 간격(px). 첫 탭은 0 */
   gapBefore: number
 }
 
-/** 왼쪽 73px 기준: 추천 →(32)→ 신메뉴 →(39)→ 커피/음료 →(39)→ 디저트 */
 const TABS: TabDef[] = [
   { id: 'recommended', label: '추천', dessertDefault: false, gapBefore: 0 },
   { id: 'new', label: '신메뉴', dessertDefault: false, gapBefore: 32 },
@@ -28,12 +25,21 @@ type CoffeeDetailDef = {
   gapBefore: number
 }
 
-/** 추천 정렬선 아래 49px — 같은 73px 들여쓰기에서 (39) 간격으로 나열 */
+/** 커피/음료 탭용 서브탭 */
 const COFFEE_DETAIL_TABS: CoffeeDetailDef[] = [
   { id: 'coffee', label: '커피', gapBefore: 0 },
   { id: 'decaf', label: '디카페인 커피', gapBefore: 39 },
   { id: 'drink', label: '음료', gapBefore: 39 },
   { id: 'tea', label: '티/라떼', gapBefore: 39 },
+]
+
+/** 추천 / 신메뉴 탭용 서브탭 (디저트 포함) */
+const RECOMMEND_DETAIL_TABS: CoffeeDetailDef[] = [
+  { id: 'coffee', label: '커피', gapBefore: 0 },
+  { id: 'decaf', label: '디카페인 커피', gapBefore: 39 },
+  { id: 'drink', label: '음료', gapBefore: 39 },
+  { id: 'tea', label: '티/라떼', gapBefore: 39 },
+  { id: 'dessert', label: '디저트', gapBefore: 39 },
 ]
 
 export type MenuCategorySelection = {
@@ -45,13 +51,12 @@ export type MenuCategoryTabsProps = {
   className?: string
   initialActiveId?: MenuCategoryId
   initialCoffeeDetail?: CoffeeDetailCategoryId
-  /** 탭 변경 시 상위·하위 카테고리 전달 */
   onSelectionChange?: (selection: MenuCategorySelection) => void
 }
 
 export function MenuCategoryTabs({
   className,
-  initialActiveId = 'coffee',
+  initialActiveId = 'recommended',
   initialCoffeeDetail = 'coffee',
   onSelectionChange,
 }: MenuCategoryTabsProps) {
@@ -75,6 +80,11 @@ export function MenuCategoryTabs({
     setActiveCoffeeDetail(id)
     emitSelection(activeId, id)
   }
+
+  const showsDetailTabs =
+    activeId === 'coffee' || activeId === 'recommended' || activeId === 'new'
+  const detailTabs =
+    activeId === 'coffee' ? COFFEE_DETAIL_TABS : RECOMMEND_DETAIL_TABS
 
   return (
     <div
@@ -109,13 +119,13 @@ export function MenuCategoryTabs({
         })}
       </div>
 
-      {activeId === 'coffee' ? (
+      {showsDetailTabs && (
         <div
           className="coffee-detail-tabs"
           role="tablist"
-          aria-label="커피·음료 상세 카테고리"
+          aria-label="상세 카테고리"
         >
-          {COFFEE_DETAIL_TABS.map((tab) => {
+          {detailTabs.map((tab) => {
             const isActive = activeCoffeeDetail === tab.id
             return (
               <button
@@ -137,7 +147,7 @@ export function MenuCategoryTabs({
             )
           })}
         </div>
-      ) : null}
+      )}
     </div>
   )
 }

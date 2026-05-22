@@ -5,8 +5,7 @@ import { OutlineFrame } from '@/components/common'
 import './HomeScreen.css'
 
 export type HomeScreenProps = {
-  /** 매장·포장 중 하나를 탭했을 때 (예: 모드 선택 페이지로 이동) */
-  onPlaceTypeSelected?: () => void
+  onPlaceTypeSelected?: (type: 'dine_in' | 'takeout') => void
 }
 
 export function HomeScreen({ onPlaceTypeSelected }: HomeScreenProps) {
@@ -30,7 +29,7 @@ export function HomeScreen({ onPlaceTypeSelected }: HomeScreenProps) {
         type="button"
         className="home-screen__tile-btn home-screen__tile-btn--dinein"
         aria-label="매장"
-        onClick={() => onPlaceTypeSelected?.()}
+        onClick={() => onPlaceTypeSelected?.('dine_in')}
       >
         <span className="home-screen__tile-btn-row">
           <img
@@ -47,7 +46,7 @@ export function HomeScreen({ onPlaceTypeSelected }: HomeScreenProps) {
         type="button"
         className="home-screen__tile-btn home-screen__tile-btn--takeout"
         aria-label="포장"
-        onClick={() => onPlaceTypeSelected?.()}
+        onClick={() => onPlaceTypeSelected?.('takeout')}
       >
         <span className="home-screen__tile-btn-row">
           <img
