@@ -6,13 +6,14 @@ import './HomeScreen.css'
 
 export type HomeScreenProps = {
   onPlaceTypeSelected?: (type: 'dine_in' | 'takeout') => void
+  onStaffCall?: () => void
 }
 
-export function HomeScreen({ onPlaceTypeSelected }: HomeScreenProps) {
+export function HomeScreen({ onPlaceTypeSelected, onStaffCall }: HomeScreenProps) {
   return (
     <div className="home-screen">
       <OutlineFrame variant="home" className="home-screen__back-frame" />
-      <OutlineFrame variant="staff" className="home-screen__staff-frame" />
+      <OutlineFrame variant="staff" className="home-screen__staff-frame" onStaffCall={onStaffCall} />
       <img
         src={addImg}
         alt=""

@@ -84,6 +84,7 @@ export function orderLineDraftToCartItem(line: OrderLineDraft): EasyCartLineItem
     id: line.id,
     name: line.name,
     unitPriceWon: line.unitPriceWon,
+    additionalWon: computeAdditionalWon(line),
     imageSrc: line.imageSrc,
     quantity: line.quantity,
   }

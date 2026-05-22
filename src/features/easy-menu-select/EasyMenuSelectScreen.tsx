@@ -70,7 +70,7 @@ export function EasyMenuSelectScreen({
   )
 
   const totalWon = useMemo(
-    () => cartItems.reduce((s, x) => s + x.unitPriceWon * x.quantity, 0),
+    () => cartItems.reduce((s, x) => s + (x.unitPriceWon + x.additionalWon) * x.quantity, 0),
     [cartItems],
   )
 

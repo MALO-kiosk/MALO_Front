@@ -4,9 +4,10 @@ import bellIcon from '../../assets/icons/bell.svg';
 
 interface HeaderProps {
   onHome?: () => void;
+  onStaffCall?: () => void;
 }
 
-export default function Header({ onHome }: HeaderProps) {
+export default function Header({ onHome, onStaffCall }: HeaderProps) {
   return (
     <header 
       className="kiosk-header" 
@@ -72,6 +73,7 @@ export default function Header({ onHome }: HeaderProps) {
       <button
         className="staff-call-btn"
         type="button"
+        onClick={onStaffCall}
         style={{
           position: 'absolute',
           right: '40.38px', // 화면 오른쪽에서 정확히 40.38px

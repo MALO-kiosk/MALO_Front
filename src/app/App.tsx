@@ -179,6 +179,7 @@ export default function App() {
               setPlaceType(type)
               setPage('mode-select')
             }}
+            onStaffCall={callStaff}
           />
         )
 
@@ -188,6 +189,7 @@ export default function App() {
             onGoHome={goHome}
             onSelectEasy={() => setPage('easy-menu-select')}
             onSelectNormal={() => setPage('common-menu-select')}
+            onStaffCall={callStaff}
           />
         )
 
@@ -262,7 +264,7 @@ export default function App() {
 
       case 'order-confirm-2':
         return (
-          <OrderFlowShell onHome={goHome}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
             <OrderConfirm2
               lines={easyCartDrafts.map(enrichOrderLineFromCatalog)}
               onPrev={() => setPage('easy-menu-select')}
@@ -331,6 +333,7 @@ export default function App() {
             orderLine={commonOrderLine}
             onOrderLineChange={patchCommonOrderLine}
             onGoHome={goHome}
+            onStaffCall={callStaff}
             onCancelOrder={() => setPage('common-option')}
             onAddMenu={() => {
               addToCommonCart(commonOrderLine)
@@ -341,7 +344,7 @@ export default function App() {
 
       case 'order-confirm':
         return (
-          <OrderFlowShell onHome={goHome}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
             <OrderConfirm
               lines={commonCartDrafts.map(enrichOrderLineFromCatalog)}
               onPrev={() => setPage('common-menu-select')}
@@ -356,7 +359,7 @@ export default function App() {
       // ── 결제·적립·완료 ────────────────────────────────────────────────
       case 'payment':
         return (
-          <OrderFlowShell onHome={goHome}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
             <PaymentSelect
               onNext={handlePaymentDone}
               onPrev={() => setPage(orderConfirmSource.current)}
@@ -366,7 +369,7 @@ export default function App() {
 
       case 'stamp-input':
         return (
-          <OrderFlowShell onHome={goHome}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
             <StampInput
               onNext={handleStampSubmit}
               onSkip={() => setPage('order-complete-receipt')}
@@ -376,7 +379,7 @@ export default function App() {
 
       case 'stamp':
         return (
-          <OrderFlowShell onHome={goHome}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
             <StampProgress
               currentCount={stampCount}
               totalCount={10}
@@ -387,7 +390,7 @@ export default function App() {
 
       case 'order-complete-receipt':
         return (
-          <OrderFlowShell onHome={goHome}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
             <OrderComplete_receipt
               onNext={() => setPage('order-complete-alarm')}
             />
@@ -396,7 +399,7 @@ export default function App() {
 
       case 'order-complete-alarm':
         return (
-          <OrderFlowShell onHome={goHome}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
             <OrderComplete_alarm onHome={goHome} />
           </OrderFlowShell>
         )

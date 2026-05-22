@@ -70,7 +70,7 @@ export function CommonMenuSelectScreen({
 
   const totalPriceLabel = useMemo(() => {
     const total = cartLines.reduce(
-      (s, x) => s + x.unitPriceWon * x.quantity,
+      (s, x) => s + (x.unitPriceWon + x.additionalWon) * x.quantity,
       0,
     )
     return total.toLocaleString('ko-KR')
