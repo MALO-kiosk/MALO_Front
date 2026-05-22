@@ -20,7 +20,6 @@ import { useMenuCatalog } from '@/lib/useMenuCatalog'
 import './EasyMenuSelectScreen.css'
 
 const COLS = 3
-const MAX_ROWS = 2
 
 export type EasyMenuSelectScreenProps = {
   onGoHome?: () => void
@@ -58,10 +57,9 @@ export function EasyMenuSelectScreen({
   )
 
   const productRows = useMemo(() => {
-    const capped = visibleProducts.slice(0, COLS * MAX_ROWS)
     const rows: MenuProduct[][] = []
-    for (let i = 0; i < capped.length; i += COLS) {
-      rows.push(capped.slice(i, i + COLS))
+    for (let i = 0; i < visibleProducts.length; i += COLS) {
+      rows.push(visibleProducts.slice(i, i + COLS))
     }
     return rows
   }, [visibleProducts])

@@ -23,12 +23,23 @@
 .easy-menu-select__menu-grid {
   position: absolute;
   top: 390px;
+  /* EasyCartBar: bottom 150px + height 297px = 447px */
+  bottom: 447px;
   left: 30.02px;
+  right: 30.02px;
   z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 17.4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.easy-menu-select__menu-grid::-webkit-scrollbar {
+  display: none;
 }
 
 .easy-menu-select__menu-row {

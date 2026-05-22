@@ -20,7 +20,6 @@ import { CommonMenuProductCard } from './CommonMenuProductCard'
 import './CommonMenuSelectScreen.css'
 
 const COLS = 4
-const MAX_ROWS = 2
 
 export type CommonMenuSelectScreenProps = {
   onGoHome?: () => void
@@ -57,10 +56,9 @@ export function CommonMenuSelectScreen({
   )
 
   const productRows = useMemo(() => {
-    const capped = visibleProducts.slice(0, COLS * MAX_ROWS)
     const rows: MenuProduct[][] = []
-    for (let i = 0; i < capped.length; i += COLS) {
-      rows.push(capped.slice(i, i + COLS))
+    for (let i = 0; i < visibleProducts.length; i += COLS) {
+      rows.push(visibleProducts.slice(i, i + COLS))
     }
     return rows
   }, [visibleProducts])
