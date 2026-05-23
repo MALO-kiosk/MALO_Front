@@ -165,6 +165,7 @@ export function menuProductToCartLine(
     id: product.id,
     name: product.name,
     unitPriceWon: product.unitPriceWon,
+    additionalWon: 0,
     imageSrc: product.imageSrc,
     quantity,
   }
