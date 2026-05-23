@@ -11,6 +11,8 @@ export type OutlineFrameProps = {
   label?: string
   /** home 변형에서만 — 지정 시 처음 화면으로 이동 등 클릭 처리 */
   onHomeClick?: () => void
+  /** staff 변형에서만 — 직원 호출 클릭 처리 */
+  onStaffCall?: () => void
   className?: string
   style?: CSSProperties
 }
@@ -19,6 +21,7 @@ export function OutlineFrame({
   variant,
   label,
   onHomeClick,
+  onStaffCall,
   className,
   style,
 }: OutlineFrameProps) {
@@ -72,7 +75,13 @@ export function OutlineFrame({
   }
 
   return (
-    <div className={rootClass} style={style}>
+    <button
+      type="button"
+      className={rootClass}
+      style={style}
+      onClick={onStaffCall}
+      aria-label={resolvedLabel}
+    >
       <span className="outline-frame__label outline-frame__label--staff">
         {resolvedLabel}
       </span>
@@ -83,6 +92,6 @@ export function OutlineFrame({
         width={27}
         height={30}
       />
-    </div>
+    </button>
   )
 }

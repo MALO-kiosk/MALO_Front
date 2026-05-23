@@ -9,7 +9,7 @@ export function CommonMenuBottomPanel({ children }: CommonMenuBottomPanelProps) 
   return (
     <div className="common-menu-bottom-panel">
       <hr className="common-menu-bottom-panel__rule" aria-hidden />
-      {children}
+      <div className="common-menu-bottom-panel__items">{children}</div>
     </div>
   )
 }

@@ -17,7 +17,7 @@ export default function PaymentSelect({ onNext, onPrev }: any) {
       <TopWhitePanel className="payment-select-page__panel" heightPx={269} />
 
       <div className="complete-card">
-        <h1 className="complete-title">주문 내용을 확인해 주세요!</h1>
+        <h1 className="complete-title">결제 수단을 선택해 주세요!</h1>
 
         {/* 모바일 페이 버튼 */}
         <button className="mobile-pay-container" onClick={onNext}>

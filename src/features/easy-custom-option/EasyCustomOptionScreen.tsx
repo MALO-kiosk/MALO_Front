@@ -29,6 +29,8 @@ export type EasyCustomOptionScreenProps = {
   panelTitle?: string
   onCancelOrder?: () => void
   onAddMenu?: () => void
+  /** 직원 호출 */
+  onStaffCall?: () => void
 }
 
 export function EasyCustomOptionScreen({
@@ -38,6 +40,7 @@ export function EasyCustomOptionScreen({
   panelTitle = '맞춤 옵션',
   onCancelOrder,
   onAddMenu,
+  onStaffCall,
 }: EasyCustomOptionScreenProps) {
   const { shotQty, syrupQty, pearlQtys, sweetness, temp, size } = orderLine
 
@@ -55,7 +58,7 @@ export function EasyCustomOptionScreen({
         className="easy-option__back-frame"
         onHomeClick={onGoHome}
       />
-      <OutlineFrame variant="staff" className="easy-option__staff-frame" />
+      <OutlineFrame variant="staff" className="easy-option__staff-frame" onStaffCall={onStaffCall} />
       <TopWhitePanel className="easy-option__panel" heightPx={269}>
         <h1 className="easy-option__title">{panelTitle}</h1>
       </TopWhitePanel>

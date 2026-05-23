@@ -5,56 +5,71 @@ import {
   formatOrderOptionLine,
   orderLineDisplayName,
 } from '@/lib/orderLineDraft'
-import cancelIcon from '@/assets/icons/cancel.svg'
 
 type OrderConfirmContentProps = {
-  line: OrderLineDraft
+  lines: OrderLineDraft[]
   onNext?: () => void
   onPrev?: () => void
 }
 
 export function OrderConfirmContent({
-  line,
+  lines,
   onNext,
   onPrev,
 }: OrderConfirmContentProps) {
-  const displayLine = enrichOrderLineFromCatalog(line)
-  const menuName = orderLineDisplayName(displayLine)
-  const lineTotalWon = computeLineTotalWon(displayLine)
-  const priceLabel = `${lineTotalWon.toLocaleString('ko-KR')} 원`
-  const totalLabel = `${lineTotalWon.toLocaleString('ko-KR')}원`
+  const displayLines = lines.map(enrichOrderLineFromCatalog)
+  const totalQty = displayLines.reduce((s, l) => s + l.quantity, 0)
+  const totalWon = displayLines.reduce((s, l) => s + computeLineTotalWon(l), 0)
+  const totalPriceLabel = `${totalWon.toLocaleString('ko-KR')}원`
 
   return (
     <div className="complete-card">
       <h1 className="complete-title">주문 내용을 확인해 주세요!</h1>
-      <img src={cancelIcon} alt="cancel" className="cancel-icon" />
-      <div className="order-header-bg" />
-      <div className="order-header">메뉴</div>
-      <div className="header-quantity">수량</div>
-      <div className="header-amount">금액</div>
 
-      <img
-        src={displayLine.imageSrc}
-        alt={menuName}
-        className="first-menu-image"
-      />
-
-      <div className="first-order-item-text">
-        <p className="first-order-item-name">{menuName}</p>
-        <p className="first-order-item-option">{formatOrderOptionLine(displayLine)}</p>
+      {/* 테이블 헤더 */}
+      <div className="oc-header-row">
+        <span className="oc-header-menu">메뉴</span>
+        <span className="oc-header-qty">수량</span>
+        <span className="oc-header-price">금액</span>
       </div>
 
-      <span className="first-order-item-qty">{displayLine.quantity}개</span>
-      <span className="first-order-item-price">{priceLabel}</span>
+      {/* 아이템 목록 — 많아지면 스크롤 */}
+      <div className="oc-item-list">
+        {displayLines.map((line) => {
+          const optionText = formatOrderOptionLine(line)
+          return (
+            <div key={line.id} className="oc-item-row">
+              <img
+                src={line.imageSrc}
+                alt={orderLineDisplayName(line)}
+                className="oc-item-row__img"
+              />
+              <div className="oc-item-row__info">
+                <p className="oc-item-row__name">{orderLineDisplayName(line)}</p>
+                {optionText && (
+                  <p className="oc-item-row__option">{optionText}</p>
+                )}
+              </div>
+              <span className="oc-item-row__qty">{line.quantity}개</span>
+              <span className="oc-item-row__price">
+                {computeLineTotalWon(line).toLocaleString('ko-KR')} 원
+              </span>
+            </div>
+          )
+        })}
+      </div>
 
-      <div className="order-divider-line" />
+      {/* 합계 */}
+      <div className="oc-divider" />
+      <div className="oc-summary">
+        <span className="oc-summary__qty-label">총수량</span>
+        <span className="oc-summary__qty-value">{totalQty}개</span>
+        <span className="oc-summary__price-label">총금액</span>
+        <span className="oc-summary__price-value">{totalPriceLabel}</span>
+      </div>
+      <div className="oc-divider" />
 
-      <div className="summary-line" />
-      <span className="total-qty-label">총수량</span>
-      <span className="total-qty-value">{displayLine.quantity}개</span>
-      <span className="total-amount-label">총금액은</span>
-      <span className="total-amount-value">{totalLabel}</span>
-      <div className="summary-line-bottom" />
+      {/* 버튼 */}
       <div className="button-group">
         <button type="button" className="no-btn" onClick={onPrev}>
           이전
