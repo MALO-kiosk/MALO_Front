@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import '@/lib/useMenuCatalog'
 import { StageViewport } from '@/components/layout'
 import { STAGE_HEIGHT, STAGE_WIDTH } from '@/config/stage'
@@ -10,28 +10,21 @@ import {
   orderLineDraftToCartItem,
   orderLineFromProduct,
 } from '@/lib/orderLineDraft'
-import { isDesertProduct, type MenuProduct } from '@/data/menuCatalog'
-import { saveOrder, saveStampAndGetCount, type PlaceType } from '@/lib/orderService'
-import { CommonOptionScreen } from '@/features/common-option'
-import { CommonMenuSelectScreen } from '@/features/common-menu-select'
+import { isDesertProduct, MENU_CATALOG, type MenuProduct } from '@/data/menuCatalog'
+import { saveOrder, saveStampAndGetCount } from '@/lib/orderService'
+import { GREETING_MESSAGE, speak, useVoiceAI, type VoiceAIEvent, type VoiceAIStep } from '@/hooks/useVoiceAI'
 import { EasyMenuSelectScreen } from '@/features/easy-menu-select'
-import { CommonCustomOptionScreen } from '@/features/common-custom-option'
 import { EasyCustomOptionScreen } from '@/features/easy-custom-option'
 import { EasyOptionScreen } from '@/features/easy-option'
-import OrderConfirm from '@/features/home/OrderConfirm'
 import OrderConfirm2 from '@/features/home/OrderConfirm2'
 import OrderComplete_alarm from '@/features/home/OrderComplete_alarm'
 import OrderComplete_receipt from '@/features/home/OrderComplete_receipt'
 import PaymentSelect from '@/features/home/PaymentSelect'
 import StampInput from '@/features/home/StampInput'
 import StampProgress from '@/features/home/StampProgress'
-import { HomeScreen } from '@/features/home'
-import { ModeSelectScreen } from '@/features/mode-select'
 import { OrderFlowShell } from './OrderFlowShell'
 
 type AppPage =
-  | 'home'
-  | 'mode-select'
   | 'easy-menu-select'
   | 'easy-option'
   | 'easy-custom-option'
@@ -41,12 +34,30 @@ type AppPage =
   | 'stamp'
   | 'order-complete-receipt'
   | 'order-complete-alarm'
-  | 'common-menu-select'
-  | 'common-option'
-  | 'common-custom-option'
-  | 'order-confirm'
 
-type OrderConfirmPage = 'order-confirm' | 'order-confirm-2'
+const STEP_TO_PAGE: Partial<Record<VoiceAIStep, AppPage>> = {
+  STEP2_MENU_SELECT: 'easy-menu-select',
+  STEP3_OPTION_SELECT: 'easy-option',
+  STEP4_CONFIRM: 'order-confirm-2',
+  STEP5_PAYMENT: 'payment',
+  STEP6_STAMP: 'stamp-input',
+  STEP7_RECEIPT: 'order-complete-receipt',
+  STEP8_COMPLETE: 'order-complete-alarm',
+}
+
+function pageToStep(p: AppPage): VoiceAIStep {
+  switch (p) {
+    case 'easy-menu-select': return 'STEP2_MENU_SELECT'
+    case 'easy-option':
+    case 'easy-custom-option': return 'STEP3_OPTION_SELECT'
+    case 'order-confirm-2': return 'STEP4_CONFIRM'
+    case 'payment': return 'STEP5_PAYMENT'
+    case 'stamp-input':
+    case 'stamp': return 'STEP6_STAMP'
+    case 'order-complete-receipt': return 'STEP7_RECEIPT'
+    case 'order-complete-alarm': return 'STEP8_COMPLETE'
+  }
+}
 
 const stagePageStyle = {
   position: 'relative' as const,
@@ -67,14 +78,26 @@ function mergeIntoDrafts(
 }
 
 export default function App() {
-  const [page, setPage] = useState<AppPage>('home')
+  const [started, setStarted] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const [page, setPage] = useState<AppPage>('easy-menu-select')
+  const [aiMessage, setAiMessage] = useState(GREETING_MESSAGE)
 
-  // ── 주문 관련 상태 ──────────────────────────────────────────────────────
-  const [placeType, setPlaceType] = useState<PlaceType>('dine_in')
+  const displayMessage = isListening ? '듣는 중입니다...' : aiMessage
+
+  const handleStart = () => {
+    const trySpeak = () => speak(GREETING_MESSAGE)
+    if (window.speechSynthesis.getVoices().length > 0) {
+      trySpeak()
+    } else {
+      window.speechSynthesis.addEventListener('voiceschanged', trySpeak, { once: true })
+    }
+    setStarted(true)
+  }
+
   const currentOrderId = useRef<string | null>(null)
   const [stampCount, setStampCount] = useState(0)
 
-  // ── 쉬운 모드 ──────────────────────────────────────────────────────────
   const [easyOrderLine, setEasyOrderLine] = useState<OrderLineDraft>(
     createDefaultOrderLineDraft,
   )
@@ -90,52 +113,35 @@ export default function App() {
 
   const easyCartItems: EasyCartLineItem[] = easyCartDrafts.map(orderLineDraftToCartItem)
 
-  // ── 일반 모드 ──────────────────────────────────────────────────────────
-  const [commonOrderLine, setCommonOrderLine] = useState<OrderLineDraft>(
-    createDefaultOrderLineDraft,
+  const cartSummary = useMemo(
+    () =>
+      easyCartDrafts.length === 0
+        ? '(비어있음)'
+        : easyCartDrafts.map((d) => `${d.name} x${d.quantity}`).join(', '),
+    [easyCartDrafts],
   )
-  const [commonCartDrafts, setCommonCartDrafts] = useState<OrderLineDraft[]>([])
 
-  const patchCommonOrderLine = useCallback((patch: Partial<OrderLineDraft>) => {
-    setCommonOrderLine((prev) => ({ ...prev, ...patch }))
-  }, [])
-
-  const addToCommonCart = useCallback((draft: OrderLineDraft) => {
-    setCommonCartDrafts((prev) => mergeIntoDrafts(prev, draft))
-  }, [])
-
-  const commonCartLines: EasyCartLineItem[] = commonCartDrafts.map(orderLineDraftToCartItem)
-
-  // ── 공통 ref ───────────────────────────────────────────────────────────
-  const orderConfirmSource = useRef<OrderConfirmPage>('order-confirm-2')
   const customOptionReturnPage = useRef<
-    Extract<AppPage, 'easy-menu-select' | 'easy-option' | 'common-option'>
+    Extract<AppPage, 'easy-menu-select' | 'easy-option'>
   >('easy-menu-select')
 
-  // ── 내비게이션 ─────────────────────────────────────────────────────────
   const goHome = useCallback(() => {
     setEasyCartDrafts([])
-    setCommonCartDrafts([])
     currentOrderId.current = null
-    setPage('home')
+    setAiMessage(GREETING_MESSAGE)
+    setPage('easy-menu-select')
   }, [])
 
   const callStaff = useCallback(() => {
     alert('직원을 호출했습니다.\n잠시만 기다려 주세요.')
   }, [])
 
-  // 결제 완료 → 주문 DB 저장 후 stamp-input으로 이동
   const handlePaymentDone = useCallback(async () => {
-    const lines =
-      orderConfirmSource.current === 'order-confirm-2'
-        ? easyCartDrafts
-        : commonCartDrafts
-    const orderId = await saveOrder(placeType, lines)
+    const orderId = await saveOrder('dine_in', easyCartDrafts)
     currentOrderId.current = orderId
     setPage('stamp-input')
-  }, [placeType, easyCartDrafts, commonCartDrafts])
+  }, [easyCartDrafts])
 
-  // 스탬프 적립 → DB upsert 후 stamp 화면으로
   const handleStampSubmit = useCallback(async (phoneNumber: string) => {
     const orderId = currentOrderId.current
     if (!orderId) { setPage('stamp'); return }
@@ -144,7 +150,82 @@ export default function App() {
     setPage('stamp')
   }, [])
 
-  // ── 상품 선택 처리 ─────────────────────────────────────────────────────
+  const handleVoiceEvent = useCallback(
+    (event: VoiceAIEvent) => {
+      setAiMessage(event.aiResponse)
+
+      let skipNextStepNav = false
+
+      if (event.action) {
+        switch (event.action.type) {
+          case 'ADD_CART': {
+            const menuName = String(event.action.payload.menuName ?? '')
+            const count = Number(event.action.payload.count ?? 1)
+            const cleanName = (s: string) => s.replace(/\s/g, '')
+            const product = MENU_CATALOG.find(
+              (p) =>
+                p.name === menuName ||
+                cleanName(p.name) === cleanName(menuName) ||
+                p.name.includes(menuName) ||
+                menuName.includes(p.name),
+            )
+            if (product) {
+              const draft = { ...orderLineFromProduct(product), quantity: count }
+              if (isDesertProduct(product)) {
+                addToEasyCart(draft)
+                skipNextStepNav = true
+              } else {
+                setEasyOrderLine(draft)
+                // nextStep STEP3_OPTION_SELECT handles navigation to easy-option
+              }
+            }
+            break
+          }
+          case 'SELECT_OPTION': {
+            const { temp, size } = event.action.payload
+            if (temp === 'ice' || temp === 'hot') patchEasyOrderLine({ temp })
+            if (size === 'regular' || size === 'large') patchEasyOrderLine({ size })
+            break
+          }
+          case 'CONFIRM_ORDER':
+            // navigation handled by nextStep
+            break
+          case 'SET_PAYMENT':
+            handlePaymentDone()
+            skipNextStepNav = true
+            break
+          case 'SET_STAMP': {
+            const { earn, phone } = event.action.payload
+            if (earn && phone) {
+              handleStampSubmit(String(phone))
+            } else {
+              setPage('order-complete-receipt')
+            }
+            skipNextStepNav = true
+            break
+          }
+          case 'SET_RECEIPT':
+            setPage('order-complete-alarm')
+            skipNextStepNav = true
+            break
+        }
+      }
+
+      if (!skipNextStepNav && event.nextStep) {
+        const nextPage = STEP_TO_PAGE[event.nextStep]
+        if (nextPage) setPage(nextPage)
+      }
+    },
+    [addToEasyCart, handlePaymentDone, handleStampSubmit, patchEasyOrderLine],
+  )
+
+  useVoiceAI({
+    currentStep: pageToStep(page),
+    cartSummary,
+    onEvent: handleVoiceEvent,
+    onListeningChange: setIsListening,
+  })
+
   const handleEasySelectProduct = useCallback(
     (product: MenuProduct) => {
       if (isDesertProduct(product)) {
@@ -157,49 +238,15 @@ export default function App() {
     [addToEasyCart],
   )
 
-  const handleCommonSelectProduct = useCallback(
-    (product: MenuProduct) => {
-      if (isDesertProduct(product)) {
-        addToCommonCart(orderLineFromProduct(product))
-      } else {
-        setCommonOrderLine(orderLineFromProduct(product))
-        setPage('common-option')
-      }
-    },
-    [addToCommonCart],
-  )
-
-  // ── 렌더 ───────────────────────────────────────────────────────────────
   const renderPage = () => {
     switch (page) {
-      case 'home':
-        return (
-          <HomeScreen
-            onPlaceTypeSelected={(type) => {
-              setPlaceType(type)
-              setPage('mode-select')
-            }}
-            onStaffCall={callStaff}
-          />
-        )
-
-      case 'mode-select':
-        return (
-          <ModeSelectScreen
-            onGoHome={goHome}
-            onSelectEasy={() => setPage('easy-menu-select')}
-            onSelectNormal={() => setPage('common-menu-select')}
-            onStaffCall={callStaff}
-          />
-        )
-
-      // ── 쉬운 모드 ────────────────────────────────────────────────────
       case 'easy-menu-select':
         return (
           <EasyMenuSelectScreen
             onGoHome={goHome}
             onStaffCall={callStaff}
             cartItems={easyCartItems}
+            aiMessage={displayMessage}
             onIncrementCart={(id) =>
               setEasyCartDrafts((prev) =>
                 prev.map((x) =>
@@ -222,7 +269,6 @@ export default function App() {
             onSelectProduct={handleEasySelectProduct}
             onOrder={() => {
               if (easyCartDrafts.length === 0) return
-              orderConfirmSource.current = 'order-confirm-2'
               setPage('order-confirm-2')
             }}
           />
@@ -235,6 +281,7 @@ export default function App() {
             onOrderLineChange={patchEasyOrderLine}
             onGoHome={goHome}
             onStaffCall={callStaff}
+            aiMessage={displayMessage}
             onCancelOrder={() => setPage('easy-menu-select')}
             onAddMenu={() => {
               addToEasyCart(easyOrderLine)
@@ -254,6 +301,7 @@ export default function App() {
             onOrderLineChange={patchEasyOrderLine}
             onGoHome={goHome}
             onStaffCall={callStaff}
+            aiMessage={displayMessage}
             onCancelOrder={() => setPage(customOptionReturnPage.current)}
             onAddMenu={() => {
               addToEasyCart(easyOrderLine)
@@ -264,112 +312,28 @@ export default function App() {
 
       case 'order-confirm-2':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <OrderConfirm2
               lines={easyCartDrafts.map(enrichOrderLineFromCatalog)}
               onPrev={() => setPage('easy-menu-select')}
-              onNext={() => {
-                orderConfirmSource.current = 'order-confirm-2'
-                setPage('payment')
-              }}
+              onNext={() => setPage('payment')}
             />
           </OrderFlowShell>
         )
 
-      // ── 일반 모드 ────────────────────────────────────────────────────
-      case 'common-menu-select':
-        return (
-          <CommonMenuSelectScreen
-            onGoHome={goHome}
-            onStaffCall={callStaff}
-            cartLines={commonCartLines}
-            onIncrementCart={(id) =>
-              setCommonCartDrafts((prev) =>
-                prev.map((x) =>
-                  x.id === id ? { ...x, quantity: x.quantity + 1 } : x,
-                ),
-              )
-            }
-            onDecrementCart={(id) =>
-              setCommonCartDrafts((prev) =>
-                prev.flatMap((x) => {
-                  if (x.id !== id) return [x]
-                  if (x.quantity <= 1) return []
-                  return [{ ...x, quantity: x.quantity - 1 }]
-                }),
-              )
-            }
-            onRemoveFromCart={(id) =>
-              setCommonCartDrafts((prev) => prev.filter((x) => x.id !== id))
-            }
-            onSelectProduct={handleCommonSelectProduct}
-            onOrder={() => {
-              if (commonCartDrafts.length === 0) return
-              orderConfirmSource.current = 'order-confirm'
-              setPage('order-confirm')
-            }}
-          />
-        )
-
-      case 'common-option':
-        return (
-          <CommonOptionScreen
-            orderLine={commonOrderLine}
-            onOrderLineChange={patchCommonOrderLine}
-            onGoHome={goHome}
-            onStaffCall={callStaff}
-            onCancelOrder={() => setPage('common-menu-select')}
-            onAddMenu={() => {
-              addToCommonCart(commonOrderLine)
-              setPage('common-menu-select')
-            }}
-            onOpenCustomOption={() => setPage('common-custom-option')}
-          />
-        )
-
-      case 'common-custom-option':
-        return (
-          <CommonCustomOptionScreen
-            orderLine={commonOrderLine}
-            onOrderLineChange={patchCommonOrderLine}
-            onGoHome={goHome}
-            onStaffCall={callStaff}
-            onCancelOrder={() => setPage('common-option')}
-            onAddMenu={() => {
-              addToCommonCart(commonOrderLine)
-              setPage('common-menu-select')
-            }}
-          />
-        )
-
-      case 'order-confirm':
-        return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
-            <OrderConfirm
-              lines={commonCartDrafts.map(enrichOrderLineFromCatalog)}
-              onPrev={() => setPage('common-menu-select')}
-              onNext={() => {
-                orderConfirmSource.current = 'order-confirm'
-                setPage('payment')
-              }}
-            />
-          </OrderFlowShell>
-        )
-
-      // ── 결제·적립·완료 ────────────────────────────────────────────────
       case 'payment':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <PaymentSelect
               onNext={handlePaymentDone}
-              onPrev={() => setPage(orderConfirmSource.current)}
+              onPrev={() => setPage('order-confirm-2')}
             />
           </OrderFlowShell>
         )
 
       case 'stamp-input':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <StampInput
               onNext={handleStampSubmit}
               onSkip={() => setPage('order-complete-receipt')}
@@ -379,7 +343,7 @@ export default function App() {
 
       case 'stamp':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <StampProgress
               currentCount={stampCount}
               totalCount={10}
@@ -390,7 +354,7 @@ export default function App() {
 
       case 'order-complete-receipt':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <OrderComplete_receipt
               onNext={() => setPage('order-complete-alarm')}
             />
@@ -399,7 +363,7 @@ export default function App() {
 
       case 'order-complete-alarm':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <OrderComplete_alarm onHome={goHome} />
           </OrderFlowShell>
         )
@@ -411,10 +375,34 @@ export default function App() {
 
   return (
     <StageViewport>
-      <div key={page} style={stagePageStyle}>
-        {renderPage()}
+      <div style={{ position: 'relative', width: STAGE_WIDTH, height: STAGE_HEIGHT, flexShrink: 0 }}>
+        <div key={page} style={stagePageStyle}>
+          {renderPage()}
+        </div>
+        {!started && (
+          <div
+            onClick={handleStart}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(0,0,0,0.55)',
+              backdropFilter: 'blur(4px)',
+              cursor: 'pointer',
+              zIndex: 9999,
+              gap: 24,
+            }}
+          >
+            <p style={{ color: '#fff', fontSize: 52, fontWeight: 700, margin: 0 }}>MALO</p>
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 28, margin: 0 }}>
+              화면을 터치해 주세요
+            </p>
+          </div>
+        )}
       </div>
     </StageViewport>
   )
 }
-//배포테스트
