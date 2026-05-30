@@ -89,7 +89,7 @@ STEP8_COMPLETE: aiResponse는 항상 "주문이 완료됐습니다. 진동벨을
 버터크루아상(3200원/디저트), 뉴욕치즈케이크(4800원/디저트), 소금빵(2900원/디저트),
 콜드브루(4100원), 유자민트티(3900원)`
 
-export const GREETING_MESSAGE = '안녕하세요! MALO 음성 주문입니다. 원하시는 메뉴를 편하게 말씀해 주세요.'
+export const GREETING_MESSAGE = '안녕하세요! 원하시는 메뉴를 말씀해 주시거나 선택해 주세요.'
 
 export function useVoiceAI({
   currentStep,

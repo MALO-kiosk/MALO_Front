@@ -85,14 +85,36 @@ export default function App() {
 
   const displayMessage = isListening ? '듣는 중입니다...' : aiMessage
 
-  const handleStart = () => {
-    const trySpeak = () => speak(GREETING_MESSAGE)
-    if (window.speechSynthesis.getVoices().length > 0) {
-      trySpeak()
-    } else {
-      window.speechSynthesis.addEventListener('voiceschanged', trySpeak, { once: true })
+  // 인사말 반복 루프 제어
+  const greetingActiveRef = useRef(false)
+  const greetingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const stopGreetingLoop = useCallback(() => {
+    greetingActiveRef.current = false
+    if (greetingTimerRef.current !== null) {
+      clearTimeout(greetingTimerRef.current)
+      greetingTimerRef.current = null
     }
+  }, [])
+
+  const handleStart = () => {
+    greetingActiveRef.current = true
     setStarted(true)
+
+    const playGreeting = () => {
+      if (!greetingActiveRef.current) return
+      speak(GREETING_MESSAGE, () => {
+        if (!greetingActiveRef.current) return
+        greetingTimerRef.current = setTimeout(playGreeting, 3000)
+      })
+    }
+
+    // 음성 목소리 로드 후 시작
+    if (window.speechSynthesis.getVoices().length > 0) {
+      playGreeting()
+    } else {
+      window.speechSynthesis.addEventListener('voiceschanged', playGreeting, { once: true })
+    }
   }
 
   const currentOrderId = useRef<string | null>(null)
@@ -152,6 +174,7 @@ export default function App() {
 
   const handleVoiceEvent = useCallback(
     (event: VoiceAIEvent) => {
+      stopGreetingLoop() // 사용자가 말을 시작했으므로 인사말 루프 중단
       setAiMessage(event.aiResponse)
 
       let skipNextStepNav = false
@@ -216,7 +239,7 @@ export default function App() {
         if (nextPage) setPage(nextPage)
       }
     },
-    [addToEasyCart, handlePaymentDone, handleStampSubmit, patchEasyOrderLine],
+    [addToEasyCart, handlePaymentDone, handleStampSubmit, patchEasyOrderLine, stopGreetingLoop],
   )
 
   useVoiceAI({
@@ -228,6 +251,8 @@ export default function App() {
 
   const handleEasySelectProduct = useCallback(
     (product: MenuProduct) => {
+      stopGreetingLoop() // 메뉴 선택 시 인사말 루프 중단
+      window.speechSynthesis.cancel()
       if (isDesertProduct(product)) {
         addToEasyCart(orderLineFromProduct(product))
       } else {
@@ -235,7 +260,7 @@ export default function App() {
         setPage('easy-option')
       }
     },
-    [addToEasyCart],
+    [addToEasyCart, stopGreetingLoop],
   )
 
   const renderPage = () => {
