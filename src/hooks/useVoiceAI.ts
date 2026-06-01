@@ -26,6 +26,7 @@ export type VoiceAIAction = {
     | 'SET_PAYMENT'
     | 'SET_STAMP'
     | 'SET_RECEIPT'
+    | 'CALL_STAFF'
     | 'GO_HOME'
     | 'GO_BACK'
   payload: Record<string, unknown>
@@ -79,6 +80,41 @@ function eulRul(name: string): '을' | '를' {
   return (code - 0xac00) % 28 === 0 ? '를' : '을'
 }
 
+/**
+ * 주문 의도 표현 및 후행 조사를 제거해 핵심 메뉴명만 추출한다.
+ * 예) "아메리카노를 시켜줘" → "아메리카노"
+ */
+function stripOrderIntent(transcript: string): string {
+  let text = normalize(transcript)
+  for (const word of voiceSynonyms.orderIntent) {
+    text = text.replaceAll(normalize(word), '')
+  }
+  // 수량 표현 제거 (하나, 두개, 세잔 등)
+  text = text.replace(/[일이삼사오육칠팔구십]+(개|잔|그릇|병)?/g, '')
+  text = text.replace(/\d+(개|잔)?/g, '')
+  // 후행 조사 제거: 을/를/이/가/은/는/으로/로/와/과/랑/도/만
+  text = text.replace(/(을|를|이|가|은|는|으로|로|와|과|랑|이랑|도|만)$/, '')
+  return text.trim()
+}
+
+/** 발화에서 한국어 수량 표현을 파싱한다. 없으면 1 반환 */
+function extractQuantity(transcript: string): number {
+  const norm = normalize(transcript)
+  const map: Array<[string, number]> = [
+    ['다섯개', 5], ['다섯잔', 5], ['오개', 5],
+    ['네개', 4], ['네잔', 4], ['사개', 4],
+    ['세개', 3], ['세잔', 3], ['삼개', 3],
+    ['두개', 2], ['두잔', 2], ['이개', 2],
+    ['한개', 1], ['한잔', 1], ['하나', 1],
+  ]
+  for (const [word, n] of map) {
+    if (norm.includes(normalize(word))) return n
+  }
+  const m = transcript.match(/(\d+)\s*(?:개|잔)/)
+  if (m) return Math.min(10, parseInt(m[1], 10))
+  return 1
+}
+
 /** 질문 조사("있어요" 등)를 제거한 핵심 메뉴 키워드 추출 */
 function extractKeyword(transcript: string): string {
   return transcript
@@ -88,10 +124,13 @@ function extractKeyword(transcript: string): string {
 
 /**
  * 사용자 발화에서 유사 메뉴를 찾는다.
- * 발화를 공백으로 나눠 각 단어가 메뉴 이름/유사어의 부분 문자열이면 매칭으로 간주.
+ * 주문 의도 표현을 제거한 뒤 각 단어를 메뉴명/유사어와 부분 문자열 비교.
  */
 function findSimilarMenu(transcript: string): (typeof voiceSynonyms.menus)[0] | null {
-  const words = transcript.split(/\s+/).map(normalize).filter((w) => w.length >= 2)
+  // 주문 의도 제거 후 검색 — "아메리카노 시켜줘" → "아메리카노"로 좁혀서 비교
+  const stripped = stripOrderIntent(transcript)
+  const searchText = stripped || transcript
+  const words = searchText.split(/\s+/).map(normalize).filter((w) => w.length >= 2)
   for (const word of words) {
     for (const menu of voiceSynonyms.menus) {
       const menuNorm = normalize(menu.name)
@@ -108,6 +147,14 @@ function findSimilarMenu(transcript: string): (typeof voiceSynonyms.menus)[0] | 
 // ─── 매칭 ──────────────────────────────────────────────────────────────────
 
 function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIEvent | null {
+  // 직원 호출 — 모든 단계에서 동작
+  if (matchesAny(transcript, voiceSynonyms.staff.call)) {
+    return {
+      aiResponse: '직원을 호출했습니다. 잠시만 기다려주세요.',
+      action: { type: 'CALL_STAFF', payload: {} },
+    }
+  }
+
   // 네비게이션 명령 최우선
   if (matchesAny(transcript, voiceSynonyms.navigation.cancel)) {
     return {
@@ -125,31 +172,41 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
   switch (currentStep) {
     case 'STEP2_MENU_SELECT': {
       const isQuestion = matchesAny(transcript, voiceSynonyms.questions.existence)
+      const qty = extractQuantity(transcript)
 
-      // ① 메뉴 이름 매칭 (존재 여부 질문 포함)
-      for (const menu of voiceSynonyms.menus) {
-        if (matchesAny(transcript, menu.synonyms)) {
-          if (isQuestion) {
-            // "OO 있어요?" 형태 — 확인 후 장바구니 담기
-            return {
-              aiResponse: `네, ${menu.name} 있습니다. 장바구니에 담아드릴게요.`,
-              action: { type: 'ADD_CART', payload: { menuName: menu.name, count: 1 } },
-              nextStep: 'STEP3_OPTION_SELECT',
-            }
-          }
-          // 일반 주문 — 디저트 여부에 따라 안내 분기
-          const response = menu.isDesert
-            ? `${menu.name}${eulRul(menu.name)} 장바구니에 담았습니다. 추가로 주문하실 메뉴가 있으신가요?`
-            : `옵션을 선택해 주세요. 추가 옵션이 필요하신가요?`
+      // 메뉴 매칭 헬퍼 — 찾으면 VoiceAIEvent 반환, 없으면 null
+      const buildMenuEvent = (menu: (typeof voiceSynonyms.menus)[0]): VoiceAIEvent => {
+        if (isQuestion) {
           return {
-            aiResponse: response,
-            action: { type: 'ADD_CART', payload: { menuName: menu.name, count: 1 } },
+            aiResponse: `네, ${menu.name} 있습니다. 장바구니에 담아드릴게요.`,
+            action: { type: 'ADD_CART', payload: { menuName: menu.name, count: qty } },
             nextStep: 'STEP3_OPTION_SELECT',
           }
         }
+        const response = menu.isDesert
+          ? `${menu.name}${eulRul(menu.name)} 장바구니에 담았습니다. 추가로 주문하실 메뉴가 있으신가요?`
+          : `옵션을 선택해 주세요. 추가 옵션이 필요하신가요?`
+        return {
+          aiResponse: response,
+          action: { type: 'ADD_CART', payload: { menuName: menu.name, count: qty } },
+          nextStep: 'STEP3_OPTION_SELECT',
+        }
       }
 
-      // ② 없는 메뉴 요청 — 유사 메뉴 추천 또는 안내
+      // ① 원문 발화 그대로 매칭 ("아메리카노", "아메리카노 주세요" 모두 포함)
+      for (const menu of voiceSynonyms.menus) {
+        if (matchesAny(transcript, menu.synonyms)) return buildMenuEvent(menu)
+      }
+
+      // ② 주문 의도 표현·조사 제거 후 재매칭 ("아메리카노를 시켜줘" → "아메리카노")
+      const stripped = stripOrderIntent(transcript)
+      if (stripped && stripped !== normalize(transcript)) {
+        for (const menu of voiceSynonyms.menus) {
+          if (matchesAny(stripped, menu.synonyms)) return buildMenuEvent(menu)
+        }
+      }
+
+      // ③ 없는 메뉴 요청 — 유사 메뉴 추천 또는 안내
       if (isQuestion || transcript.length >= 2) {
         const keyword = extractKeyword(transcript)
         if (keyword) {
@@ -167,7 +224,7 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
         }
       }
 
-      // ③ 장바구니 아이템 결제 화면으로
+      // ④ 장바구니 아이템 결제 화면으로
       if (matchesAny(transcript, voiceSynonyms.order.confirm)) {
         return {
           aiResponse: '주문 내역을 확인해 드릴게요.',
@@ -407,21 +464,25 @@ export function useVoiceAI({
   currentStep,
   onEvent,
   onListeningChange,
+  onTranscriptChange,
 }: {
   currentStep: VoiceAIStep
   cartSummary?: string
   onEvent: (event: VoiceAIEvent) => void
   onListeningChange?: (listening: boolean) => void
+  onTranscriptChange?: (transcript: string) => void
 }) {
   const stateRef = useRef({
     currentStep,
     onEvent,
     onListeningChange,
+    onTranscriptChange,
     isProcessing: false,
   })
   stateRef.current.currentStep = currentStep
   stateRef.current.onEvent = onEvent
   stateRef.current.onListeningChange = onListeningChange
+  stateRef.current.onTranscriptChange = onTranscriptChange
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -431,7 +492,7 @@ export function useVoiceAI({
 
     const recognition = new SpeechRecognitionAPI()
     recognition.continuous = true
-    recognition.interimResults = false
+    recognition.interimResults = true
     recognition.lang = 'ko-KR'
 
     let stopped = false
@@ -439,6 +500,7 @@ export function useVoiceAI({
     let ttsInProgress = false
 
     const setListening = (v: boolean) => stateRef.current.onListeningChange?.(v)
+    const setTranscript = (t: string) => stateRef.current.onTranscriptChange?.(t)
 
     recognition.onstart = () => {
       console.log('[STT] 🎙️ 인식 시작')
@@ -451,10 +513,22 @@ export function useVoiceAI({
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       const last = event.results[event.results.length - 1]
-      if (!last.isFinal) return
       const transcript = last[0].transcript.trim()
       const state = stateRef.current
 
+      // 중간 결과 — 사용자가 말하기 시작하면 재생 중인 안내 음성 즉시 중단
+      if (!last.isFinal) {
+        if (ttsInProgress || window.speechSynthesis.speaking) {
+          window.speechSynthesis.cancel()
+          ttsInProgress = false
+          state.isProcessing = false
+        }
+        setTranscript(transcript)
+        return
+      }
+
+      // 최종 결과 — 실시간 표시 초기화
+      setTranscript('')
       console.log('[STT] 📝 인식된 발화:', transcript)
 
       if (!transcript) return

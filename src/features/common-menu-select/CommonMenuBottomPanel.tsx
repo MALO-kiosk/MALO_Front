@@ -1,3 +1,4 @@
+import { Children } from 'react'
 import type { ReactNode } from 'react'
 import './CommonMenuBottomPanel.css'
 
@@ -6,10 +7,17 @@ export type CommonMenuBottomPanelProps = {
 }
 
 export function CommonMenuBottomPanel({ children }: CommonMenuBottomPanelProps) {
+  const childArray = Children.toArray(children)
   return (
     <div className="common-menu-bottom-panel">
-      <hr className="common-menu-bottom-panel__rule" aria-hidden />
-      <div className="common-menu-bottom-panel__items">{children}</div>
+      <div className="common-menu-bottom-panel__items">
+        {childArray.map((child, i) => (
+          <div key={i} className="common-menu-bottom-panel__entry">
+            {child}
+            <hr className="common-menu-bottom-panel__rule" aria-hidden />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

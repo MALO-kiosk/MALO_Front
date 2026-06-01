@@ -104,8 +104,9 @@ export default function App() {
   const [isEasyMode, setIsEasyMode] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [aiMessage, setAiMessage] = useState(GREETING_MESSAGE)
-  // 쉬운모드일 때만 AI 말풍선 표시
-  const displayMessage = isEasyMode ? (isListening ? '듣는 중입니다...' : aiMessage) : undefined
+  const [currentTranscript, setCurrentTranscript] = useState('')
+  // 쉬운모드일 때만 AI 말풍선 표시 — 사용자가 말하는 중이면 실시간 발화 우선
+  const displayMessage = isEasyMode ? (currentTranscript || aiMessage) : undefined
 
   // 인사말 반복 루프 제어
   const greetingActiveRef = useRef(false)
@@ -237,6 +238,10 @@ export default function App() {
 
       if (event.action) {
         switch (event.action.type) {
+          case 'CALL_STAFF':
+            callStaff()
+            skipNextStepNav = true
+            break
           case 'GO_HOME':
             // 음성 "주문취소/나가기": easy-menu-select로 이동 (충돌2 B)
             setEasyCartDrafts([])
@@ -373,6 +378,7 @@ export default function App() {
     cartSummary,
     onEvent: handleVoiceEvent,
     onListeningChange: setIsListening,
+    onTranscriptChange: setCurrentTranscript,
   })
 
   // ── 상품 선택 처리 ─────────────────────────────────────────────────────
