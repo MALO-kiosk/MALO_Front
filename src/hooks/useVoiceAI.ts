@@ -59,6 +59,8 @@ export function speak(text: string, onEnd?: () => void) {
   }, 50)
 }
 
+// ─── 헬퍼 함수 ─────────────────────────────────────────────────────────────
+
 function normalize(text: string): string {
   return text.replace(/\s/g, '').toLowerCase()
 }
@@ -68,8 +70,51 @@ function matchesAny(text: string, keywords: string[]): boolean {
   return keywords.some((k) => norm.includes(normalize(k)))
 }
 
+/** 받침 유무에 따라 을/를 반환 */
+function eulRul(name: string): '을' | '를' {
+  const last = name[name.length - 1]
+  if (!last) return '을'
+  const code = last.charCodeAt(0)
+  if (code < 0xac00 || code > 0xd7a3) return '을'
+  return (code - 0xac00) % 28 === 0 ? '를' : '을'
+}
+
+/** 질문 조사("있어요" 등)를 제거한 핵심 메뉴 키워드 추출 */
+function extractKeyword(transcript: string): string {
+  return transcript
+    .replace(/있어요|있나요|있나|파나요|되나요|있습니까|있죠|주세요|줘|드릴게요|주문할게요|주문할래요|원해요/g, '')
+    .trim()
+}
+
+/**
+ * 사용자 발화에서 유사 메뉴를 찾는다.
+ * 발화를 공백으로 나눠 각 단어가 메뉴 이름/유사어의 부분 문자열이면 매칭으로 간주.
+ */
+function findSimilarMenu(transcript: string): (typeof voiceSynonyms.menus)[0] | null {
+  const words = transcript.split(/\s+/).map(normalize).filter((w) => w.length >= 2)
+  for (const word of words) {
+    for (const menu of voiceSynonyms.menus) {
+      const menuNorm = normalize(menu.name)
+      if (menuNorm.includes(word) || word.includes(menuNorm)) return menu
+      for (const syn of menu.synonyms) {
+        const synNorm = normalize(syn)
+        if (synNorm.includes(word) || word.includes(synNorm)) return menu
+      }
+    }
+  }
+  return null
+}
+
+// ─── 매칭 ──────────────────────────────────────────────────────────────────
+
 function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIEvent | null {
   // 네비게이션 명령 최우선
+  if (matchesAny(transcript, voiceSynonyms.navigation.cancel)) {
+    return {
+      aiResponse: '주문을 취소했습니다. 처음 화면으로 돌아갑니다.',
+      action: { type: 'GO_HOME', payload: {} },
+    }
+  }
   if (matchesAny(transcript, voiceSynonyms.navigation.exit)) {
     return { aiResponse: '처음 화면으로 돌아갑니다.', action: { type: 'GO_HOME', payload: {} } }
   }
@@ -79,23 +124,57 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
 
   switch (currentStep) {
     case 'STEP2_MENU_SELECT': {
-      // 메뉴 이름 먼저 체크 (구체적일수록 우선)
+      const isQuestion = matchesAny(transcript, voiceSynonyms.questions.existence)
+
+      // ① 메뉴 이름 매칭 (존재 여부 질문 포함)
       for (const menu of voiceSynonyms.menus) {
         if (matchesAny(transcript, menu.synonyms)) {
+          if (isQuestion) {
+            // "OO 있어요?" 형태 — 확인 후 장바구니 담기
+            return {
+              aiResponse: `네, ${menu.name} 있습니다. 장바구니에 담아드릴게요.`,
+              action: { type: 'ADD_CART', payload: { menuName: menu.name, count: 1 } },
+              nextStep: 'STEP3_OPTION_SELECT',
+            }
+          }
+          // 일반 주문 — 디저트 여부에 따라 안내 분기
+          const response = menu.isDesert
+            ? `${menu.name}${eulRul(menu.name)} 장바구니에 담았습니다. 추가로 주문하실 메뉴가 있으신가요?`
+            : `옵션을 선택해 주세요. 추가 옵션이 필요하신가요?`
           return {
-            aiResponse: `${menu.name} 선택하셨습니다. 온도와 사이즈를 선택해 주세요.`,
+            aiResponse: response,
             action: { type: 'ADD_CART', payload: { menuName: menu.name, count: 1 } },
             nextStep: 'STEP3_OPTION_SELECT',
           }
         }
       }
-      // 장바구니에 담긴 아이템을 결제 화면으로
+
+      // ② 없는 메뉴 요청 — 유사 메뉴 추천 또는 안내
+      if (isQuestion || transcript.length >= 2) {
+        const keyword = extractKeyword(transcript)
+        if (keyword) {
+          const similar = findSimilarMenu(keyword || transcript)
+          if (similar) {
+            return {
+              aiResponse: `현재 ${keyword} 메뉴가 없습니다. 그 대신 ${similar.name}${eulRul(similar.name)} 추천합니다.`,
+            }
+          }
+          if (isQuestion) {
+            return {
+              aiResponse: `죄송합니다, 현재 ${keyword} 관련 메뉴가 준비되어 있지 않습니다. 다른 메뉴를 말씀해 주세요.`,
+            }
+          }
+        }
+      }
+
+      // ③ 장바구니 아이템 결제 화면으로
       if (matchesAny(transcript, voiceSynonyms.order.confirm)) {
         return {
           aiResponse: '주문 내역을 확인해 드릴게요.',
           nextStep: 'STEP4_CONFIRM',
         }
       }
+
       return null
     }
 
@@ -105,13 +184,13 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
       // 온도
       if (matchesAny(transcript, voiceSynonyms.options.ice)) {
         return {
-          aiResponse: '아이스로 선택하셨습니다.',
+          aiResponse: '아이스로 설정했습니다.',
           action: { type: 'SELECT_OPTION', payload: { temp: 'ice' } },
         }
       }
       if (matchesAny(transcript, voiceSynonyms.options.hot)) {
         return {
-          aiResponse: '핫으로 선택하셨습니다.',
+          aiResponse: '핫으로 설정했습니다.',
           action: { type: 'SELECT_OPTION', payload: { temp: 'hot' } },
         }
       }
@@ -119,13 +198,13 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
       // 사이즈
       if (matchesAny(transcript, voiceSynonyms.options.large)) {
         return {
-          aiResponse: '라지 사이즈로 선택하셨습니다.',
+          aiResponse: '라지 사이즈로 설정했습니다.',
           action: { type: 'SELECT_OPTION', payload: { size: 'large' } },
         }
       }
       if (matchesAny(transcript, voiceSynonyms.options.regular)) {
         return {
-          aiResponse: '레귤러 사이즈로 선택하셨습니다.',
+          aiResponse: '레귤러 사이즈로 설정했습니다.',
           action: { type: 'SELECT_OPTION', payload: { size: 'regular' } },
         }
       }
@@ -133,13 +212,13 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
       // 컵 선택
       if (matchesAny(transcript, voiceSynonyms.cup.mug)) {
         return {
-          aiResponse: '머그컵으로 선택하셨습니다.',
+          aiResponse: '머그컵으로 설정했습니다.',
           action: { type: 'SELECT_CUP', payload: { cup: 'mug' } },
         }
       }
       if (matchesAny(transcript, voiceSynonyms.cup.personal)) {
         return {
-          aiResponse: '개인컵으로 선택하셨습니다.',
+          aiResponse: '개인컵으로 설정했습니다.',
           action: { type: 'SELECT_CUP', payload: { cup: 'personal' } },
         }
       }
@@ -164,16 +243,16 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
         }
       }
 
-      // 샷: remove 먼저 → add 순서로 체크 (짧은 add 키워드가 remove 키워드를 포함하는 오매칭 방지)
+      // 샷: remove 먼저 (짧은 add 키워드가 remove 문자열을 포함하는 오매칭 방지)
       if (matchesAny(transcript, co.shot.remove)) {
         return {
-          aiResponse: '샷을 하나 뺐습니다.',
+          aiResponse: '샷을 하나 줄였습니다.',
           action: { type: 'SET_SHOT', payload: { delta: -1 } },
         }
       }
       if (matchesAny(transcript, co.shot.add)) {
         return {
-          aiResponse: '샷을 추가했습니다.',
+          aiResponse: '샷 추가 설정했습니다.',
           action: { type: 'SET_SHOT', payload: { delta: 1 } },
         }
       }
@@ -181,18 +260,18 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
       // 시럽: remove 먼저
       if (matchesAny(transcript, co.syrup.remove)) {
         return {
-          aiResponse: '바닐라 시럽을 뺐습니다.',
+          aiResponse: '바닐라 시럽을 줄였습니다.',
           action: { type: 'SET_SYRUP', payload: { delta: -1 } },
         }
       }
       if (matchesAny(transcript, co.syrup.add)) {
         return {
-          aiResponse: '바닐라 시럽을 추가했습니다.',
+          aiResponse: '바닐라 시럽 추가 설정했습니다.',
           action: { type: 'SET_SYRUP', payload: { delta: 1 } },
         }
       }
 
-      // 펄: remove 먼저 체크 → add (예: "알로에빼"가 "알로에" add에 먼저 매칭되는 문제 방지)
+      // 펄: remove 먼저 (예: "알로에빼"가 "알로에" add에 먼저 매칭되는 버그 방지)
       const pearlEntries = [
         { index: 0, name: '타피오카펄', add: co.pearl.tapioca.add, remove: co.pearl.tapioca.remove },
         { index: 1, name: '화이트펄',   add: co.pearl.white.add,   remove: co.pearl.white.remove   },
@@ -201,13 +280,13 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
       for (const { index, name, add, remove } of pearlEntries) {
         if (matchesAny(transcript, remove)) {
           return {
-            aiResponse: `${name}을 뺐습니다.`,
+            aiResponse: `${name}${eulRul(name)} 줄였습니다.`,
             action: { type: 'SET_PEARL', payload: { pearlIndex: index, delta: -1 } },
           }
         }
         if (matchesAny(transcript, add)) {
           return {
-            aiResponse: `${name}을 추가했습니다.`,
+            aiResponse: `${name} 추가 설정했습니다.`,
             action: { type: 'SET_PEARL', payload: { pearlIndex: index, delta: 1 } },
           }
         }
@@ -224,9 +303,8 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
       // 장바구니에 담기 → 메뉴 선택 화면으로 복귀
       if (matchesAny(transcript, co.addToCart)) {
         return {
-          aiResponse: '장바구니에 담았습니다.',
+          aiResponse: '주문이 담겼습니다. 추가로 주문하실 메뉴가 있으신가요?',
           action: { type: 'ADD_LINE_TO_CART', payload: {} },
-          // nextStep 없음 → App.tsx가 easy-menu-select로 이동
         }
       }
 
@@ -277,7 +355,7 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
           CARD: '신용카드',
         }
         return {
-          aiResponse: `${labels[method]}로 결제하겠습니다.`,
+          aiResponse: `${labels[method]}로 결제하겠습니다. 잠시만 기다려 주세요.`,
           action: { type: 'SET_PAYMENT', payload: { method } },
         }
       }
@@ -305,7 +383,7 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
     case 'STEP7_RECEIPT': {
       if (matchesAny(transcript, voiceSynonyms.receipt.no)) {
         return {
-          aiResponse: '영수증을 건너뜁니다.',
+          aiResponse: '영수증을 출력하지 않겠습니다.',
           action: { type: 'SET_RECEIPT', payload: { receipt: false } },
         }
       }
@@ -322,6 +400,8 @@ function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIE
       return null
   }
 }
+
+// ─── 훅 ────────────────────────────────────────────────────────────────────
 
 export function useVoiceAI({
   currentStep,
