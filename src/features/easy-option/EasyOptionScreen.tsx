@@ -22,18 +22,13 @@ export function cartSummarySpec(temp: TempChoice, size: SizeChoice): string {
 export type EasyOptionScreenProps = {
   orderLine: OrderLineDraft
   onOrderLineChange: (patch: Partial<OrderLineDraft>) => void
-  /** 처음으로 → 홈 */
   onGoHome?: () => void
-  /** 상단 옵션 안내 문구 */
   optionTitle?: string
-  /** 주문 취소 */
   onCancelOrder?: () => void
-  /** 메뉴 담기 */
   onAddMenu?: () => void
-  /** 맞춤 옵션 화면으로 이동 — `easy-option__custom-btn` */
   onOpenCustomOption: () => void
-  /** 직원 호출 */
   onStaffCall?: () => void
+  aiMessage?: string
 }
 
 export function EasyOptionScreen({
@@ -45,6 +40,7 @@ export function EasyOptionScreen({
   onAddMenu,
   onOpenCustomOption,
   onStaffCall,
+  aiMessage,
 }: EasyOptionScreenProps) {
   const { temp, size, cup, only_cold } = orderLine
 
@@ -126,7 +122,7 @@ export function EasyOptionScreen({
         맞춤 옵션
       </button>
       <p className="easy-option__custom-hint">* 더 상세하게, 내 취향대로! *</p>
-      <AISpeechDisplay />
+      <AISpeechDisplay message={aiMessage} listening={!!aiMessage} />
       <EasyCartBarTotal
         imageSrc={orderLine.imageSrc}
         menuName={orderLine.name}

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import '@/lib/useMenuCatalog'
 import { StageViewport } from '@/components/layout'
 import { STAGE_HEIGHT, STAGE_WIDTH } from '@/config/stage'
@@ -10,8 +10,9 @@ import {
   orderLineDraftToCartItem,
   orderLineFromProduct,
 } from '@/lib/orderLineDraft'
-import { isDesertProduct, type MenuProduct } from '@/data/menuCatalog'
+import { isDesertProduct, MENU_CATALOG, type MenuProduct } from '@/data/menuCatalog'
 import { saveOrder, saveStampAndGetCount, type PlaceType } from '@/lib/orderService'
+import { GREETING_MESSAGE, speak, useVoiceAI, type VoiceAIEvent, type VoiceAIStep } from '@/hooks/useVoiceAI'
 import { CommonOptionScreen } from '@/features/common-option'
 import { CommonMenuSelectScreen } from '@/features/common-menu-select'
 import { EasyMenuSelectScreen } from '@/features/easy-menu-select'
@@ -48,6 +49,33 @@ type AppPage =
 
 type OrderConfirmPage = 'order-confirm' | 'order-confirm-2'
 
+// 쉬운모드 step ↔ page 매핑
+const STEP_TO_PAGE: Partial<Record<VoiceAIStep, AppPage>> = {
+  STEP2_MENU_SELECT: 'easy-menu-select',
+  STEP3_OPTION_SELECT: 'easy-option',
+  STEP4_CONFIRM: 'order-confirm-2',
+  STEP5_PAYMENT: 'payment',
+  STEP6_STAMP: 'stamp-input',
+  STEP7_RECEIPT: 'order-complete-receipt',
+  STEP8_COMPLETE: 'order-complete-alarm',
+}
+
+// 비쉬운모드 페이지는 STEP1_GREETING 반환 → 음성 AI 비활성
+function pageToStep(p: AppPage): VoiceAIStep {
+  switch (p) {
+    case 'easy-menu-select': return 'STEP2_MENU_SELECT'
+    case 'easy-option':
+    case 'easy-custom-option': return 'STEP3_OPTION_SELECT'
+    case 'order-confirm-2': return 'STEP4_CONFIRM'
+    case 'payment': return 'STEP5_PAYMENT'
+    case 'stamp-input':
+    case 'stamp': return 'STEP6_STAMP'
+    case 'order-complete-receipt': return 'STEP7_RECEIPT'
+    case 'order-complete-alarm': return 'STEP8_COMPLETE'
+    default: return 'STEP1_GREETING'
+  }
+}
+
 const stagePageStyle = {
   position: 'relative' as const,
   width: STAGE_WIDTH,
@@ -67,7 +95,27 @@ function mergeIntoDrafts(
 }
 
 export default function App() {
+  // ── 페이지 상태 (develop 유지: 초기값 'home') ──────────────────────────
   const [page, setPage] = useState<AppPage>('home')
+  const pageRef = useRef<AppPage>('home')
+  pageRef.current = page
+
+  // ── 쉬운모드 음성 AI 상태 ──────────────────────────────────────────────
+  const [isListening, setIsListening] = useState(false)
+  const [aiMessage, setAiMessage] = useState(GREETING_MESSAGE)
+  const displayMessage = isListening ? '듣는 중입니다...' : aiMessage
+
+  // 인사말 반복 루프 제어
+  const greetingActiveRef = useRef(false)
+  const greetingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const stopGreetingLoop = useCallback(() => {
+    greetingActiveRef.current = false
+    if (greetingTimerRef.current !== null) {
+      clearTimeout(greetingTimerRef.current)
+      greetingTimerRef.current = null
+    }
+  }, [])
 
   // ── 주문 관련 상태 ──────────────────────────────────────────────────────
   const [placeType, setPlaceType] = useState<PlaceType>('dine_in')
@@ -78,6 +126,9 @@ export default function App() {
   const [easyOrderLine, setEasyOrderLine] = useState<OrderLineDraft>(
     createDefaultOrderLineDraft,
   )
+  const easyOrderLineRef = useRef(easyOrderLine)
+  easyOrderLineRef.current = easyOrderLine
+
   const [easyCartDrafts, setEasyCartDrafts] = useState<OrderLineDraft[]>([])
 
   const patchEasyOrderLine = useCallback((patch: Partial<OrderLineDraft>) => {
@@ -89,6 +140,14 @@ export default function App() {
   }, [])
 
   const easyCartItems: EasyCartLineItem[] = easyCartDrafts.map(orderLineDraftToCartItem)
+
+  const cartSummary = useMemo(
+    () =>
+      easyCartDrafts.length === 0
+        ? '(비어있음)'
+        : easyCartDrafts.map((d) => `${d.name} x${d.quantity}`).join(', '),
+    [easyCartDrafts],
+  )
 
   // ── 일반 모드 ──────────────────────────────────────────────────────────
   const [commonOrderLine, setCommonOrderLine] = useState<OrderLineDraft>(
@@ -113,6 +172,7 @@ export default function App() {
   >('easy-menu-select')
 
   // ── 내비게이션 ─────────────────────────────────────────────────────────
+  // 물리 홈 버튼: 'home' 으로 이동 (develop 유지)
   const goHome = useCallback(() => {
     setEasyCartDrafts([])
     setCommonCartDrafts([])
@@ -124,7 +184,27 @@ export default function App() {
     alert('직원을 호출했습니다.\n잠시만 기다려 주세요.')
   }, [])
 
-  // 결제 완료 → 주문 DB 저장 후 stamp-input으로 이동
+  // 쉬운모드 진입: 인사말 루프 시작 + easy-menu-select 이동
+  const handleSelectEasy = useCallback(() => {
+    setPage('easy-menu-select')
+    greetingActiveRef.current = true
+
+    const playGreeting = () => {
+      if (!greetingActiveRef.current) return
+      speak(GREETING_MESSAGE, () => {
+        if (!greetingActiveRef.current) return
+        greetingTimerRef.current = setTimeout(playGreeting, 3000)
+      })
+    }
+
+    if (window.speechSynthesis.getVoices().length > 0) {
+      playGreeting()
+    } else {
+      window.speechSynthesis.addEventListener('voiceschanged', playGreeting, { once: true })
+    }
+  }, [])
+
+  // 결제 완료 → 주문 DB 저장 후 stamp-input으로 이동 (develop 유지: placeType + orderConfirmSource)
   const handlePaymentDone = useCallback(async () => {
     const lines =
       orderConfirmSource.current === 'order-confirm-2'
@@ -144,9 +224,159 @@ export default function App() {
     setPage('stamp')
   }, [])
 
+  // ── 쉬운모드 음성 이벤트 핸들러 ───────────────────────────────────────
+  const handleVoiceEvent = useCallback(
+    (event: VoiceAIEvent) => {
+      stopGreetingLoop()
+      setAiMessage(event.aiResponse)
+
+      let skipNextStepNav = false
+
+      if (event.action) {
+        switch (event.action.type) {
+          case 'GO_HOME':
+            // 음성 "주문취소/나가기": easy-menu-select로 이동 (충돌2 B)
+            setEasyCartDrafts([])
+            currentOrderId.current = null
+            setAiMessage(GREETING_MESSAGE)
+            setPage('easy-menu-select')
+            skipNextStepNav = true
+            break
+          case 'GO_BACK': {
+            const prevPageMap: Partial<Record<AppPage, AppPage>> = {
+              'easy-option': 'easy-menu-select',
+              'easy-custom-option': customOptionReturnPage.current,
+              'order-confirm-2': 'easy-menu-select',
+              payment: 'order-confirm-2',
+              'stamp-input': 'payment',
+              'order-complete-receipt': 'stamp-input',
+            }
+            const prev = prevPageMap[pageRef.current]
+            if (prev) setPage(prev)
+            else setPage('easy-menu-select')
+            skipNextStepNav = true
+            break
+          }
+          case 'ADD_CART': {
+            const menuName = String(event.action.payload.menuName ?? '')
+            const count = Number(event.action.payload.count ?? 1)
+            const cleanName = (s: string) => s.replace(/\s/g, '')
+            const product = MENU_CATALOG.find(
+              (p) =>
+                p.name === menuName ||
+                cleanName(p.name) === cleanName(menuName) ||
+                p.name.includes(menuName) ||
+                menuName.includes(p.name),
+            )
+            if (product) {
+              const draft = { ...orderLineFromProduct(product), quantity: count }
+              if (isDesertProduct(product)) {
+                addToEasyCart(draft)
+                skipNextStepNav = true
+              } else {
+                setEasyOrderLine(draft)
+              }
+            }
+            break
+          }
+          case 'SELECT_OPTION': {
+            const { temp, size } = event.action.payload
+            if (temp === 'ice' || temp === 'hot') patchEasyOrderLine({ temp })
+            if (size === 'regular' || size === 'large') patchEasyOrderLine({ size })
+            break
+          }
+          case 'SELECT_CUP': {
+            const { cup } = event.action.payload
+            if (cup === 'mug' || cup === 'personal') patchEasyOrderLine({ cup })
+            break
+          }
+          case 'OPEN_CUSTOM_OPTION': {
+            customOptionReturnPage.current = pageRef.current === 'easy-option' ? 'easy-option' : 'easy-menu-select'
+            setPage('easy-custom-option')
+            skipNextStepNav = true
+            break
+          }
+          case 'ADD_LINE_TO_CART': {
+            addToEasyCart(easyOrderLineRef.current)
+            if (!event.nextStep) {
+              setPage('easy-menu-select')
+              skipNextStepNav = true
+            }
+            break
+          }
+          case 'SET_SHOT': {
+            const delta = Number(event.action.payload.delta ?? 0)
+            setEasyOrderLine((prev) => ({ ...prev, shotQty: Math.max(0, prev.shotQty + delta) }))
+            break
+          }
+          case 'SET_SYRUP': {
+            const delta = Number(event.action.payload.delta ?? 0)
+            setEasyOrderLine((prev) => ({ ...prev, syrupQty: Math.max(0, prev.syrupQty + delta) }))
+            break
+          }
+          case 'SET_SWEETNESS': {
+            const { sweetness } = event.action.payload
+            if (sweetness === 'more' || sweetness === 'normal' || sweetness === 'less') {
+              patchEasyOrderLine({ sweetness })
+            }
+            break
+          }
+          case 'SET_PEARL': {
+            const pearlIndex = Number(event.action.payload.pearlIndex ?? 0)
+            const delta = Number(event.action.payload.delta ?? 0)
+            if (pearlIndex >= 0 && pearlIndex <= 2) {
+              setEasyOrderLine((prev) => {
+                const next = [...prev.pearlQtys] as [number, number, number]
+                next[pearlIndex] = Math.max(0, next[pearlIndex] + delta)
+                return { ...prev, pearlQtys: next }
+              })
+            }
+            break
+          }
+          case 'CONFIRM_ORDER':
+            break
+          case 'SET_PAYMENT':
+            handlePaymentDone()
+            skipNextStepNav = true
+            break
+          case 'SET_STAMP': {
+            const { earn, phone } = event.action.payload
+            if (earn && phone) {
+              handleStampSubmit(String(phone))
+            } else {
+              setPage('order-complete-receipt')
+            }
+            skipNextStepNav = true
+            break
+          }
+          case 'SET_RECEIPT':
+            setPage('order-complete-alarm')
+            skipNextStepNav = true
+            break
+        }
+      }
+
+      if (!skipNextStepNav && event.nextStep) {
+        const nextPage = STEP_TO_PAGE[event.nextStep]
+        if (nextPage) setPage(nextPage)
+      }
+    },
+    [addToEasyCart, goHome, handlePaymentDone, handleStampSubmit, patchEasyOrderLine, stopGreetingLoop],
+  )
+
+  // 비쉬운모드 페이지에서는 STEP1_GREETING 반환 → 음성 AI 비활성 (충돌3 B)
+  useVoiceAI({
+    currentStep: pageToStep(page),
+    cartSummary,
+    onEvent: handleVoiceEvent,
+    onListeningChange: setIsListening,
+  })
+
   // ── 상품 선택 처리 ─────────────────────────────────────────────────────
   const handleEasySelectProduct = useCallback(
     (product: MenuProduct) => {
+      stopGreetingLoop()
+      window.speechSynthesis.cancel()
       if (isDesertProduct(product)) {
         addToEasyCart(orderLineFromProduct(product))
       } else {
@@ -154,7 +384,7 @@ export default function App() {
         setPage('easy-option')
       }
     },
-    [addToEasyCart],
+    [addToEasyCart, stopGreetingLoop],
   )
 
   const handleCommonSelectProduct = useCallback(
@@ -187,7 +417,7 @@ export default function App() {
         return (
           <ModeSelectScreen
             onGoHome={goHome}
-            onSelectEasy={() => setPage('easy-menu-select')}
+            onSelectEasy={handleSelectEasy}
             onSelectNormal={() => setPage('common-menu-select')}
             onStaffCall={callStaff}
           />
@@ -200,6 +430,7 @@ export default function App() {
             onGoHome={goHome}
             onStaffCall={callStaff}
             cartItems={easyCartItems}
+            aiMessage={displayMessage}
             onIncrementCart={(id) =>
               setEasyCartDrafts((prev) =>
                 prev.map((x) =>
@@ -235,6 +466,7 @@ export default function App() {
             onOrderLineChange={patchEasyOrderLine}
             onGoHome={goHome}
             onStaffCall={callStaff}
+            aiMessage={displayMessage}
             onCancelOrder={() => setPage('easy-menu-select')}
             onAddMenu={() => {
               addToEasyCart(easyOrderLine)
@@ -254,6 +486,7 @@ export default function App() {
             onOrderLineChange={patchEasyOrderLine}
             onGoHome={goHome}
             onStaffCall={callStaff}
+            aiMessage={displayMessage}
             onCancelOrder={() => setPage(customOptionReturnPage.current)}
             onAddMenu={() => {
               addToEasyCart(easyOrderLine)
@@ -264,7 +497,7 @@ export default function App() {
 
       case 'order-confirm-2':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <OrderConfirm2
               lines={easyCartDrafts.map(enrichOrderLineFromCatalog)}
               onPrev={() => setPage('easy-menu-select')}
@@ -359,7 +592,7 @@ export default function App() {
       // ── 결제·적립·완료 ────────────────────────────────────────────────
       case 'payment':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <PaymentSelect
               onNext={handlePaymentDone}
               onPrev={() => setPage(orderConfirmSource.current)}
@@ -369,7 +602,7 @@ export default function App() {
 
       case 'stamp-input':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <StampInput
               onNext={handleStampSubmit}
               onSkip={() => setPage('order-complete-receipt')}
@@ -379,7 +612,7 @@ export default function App() {
 
       case 'stamp':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <StampProgress
               currentCount={stampCount}
               totalCount={10}
@@ -390,7 +623,7 @@ export default function App() {
 
       case 'order-complete-receipt':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <OrderComplete_receipt
               onNext={() => setPage('order-complete-alarm')}
             />
@@ -399,7 +632,7 @@ export default function App() {
 
       case 'order-complete-alarm':
         return (
-          <OrderFlowShell onHome={goHome} onStaffCall={callStaff}>
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
             <OrderComplete_alarm onHome={goHome} />
           </OrderFlowShell>
         )
@@ -417,4 +650,3 @@ export default function App() {
     </StageViewport>
   )
 }
-//배포테스트
