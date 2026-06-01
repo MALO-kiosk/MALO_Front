@@ -24,14 +24,13 @@ const COLS = 3
 export type EasyMenuSelectScreenProps = {
   onGoHome?: () => void
   onStaffCall?: () => void
-  /** App.tsx에서 관리하는 카트 (페이지 이동 시에도 유지) */
   cartItems: EasyCartLineItem[]
   onIncrementCart: (id: string) => void
   onDecrementCart: (id: string) => void
   onRemoveFromCart: (id: string) => void
-  /** 음료 → 옵션 화면, 디저트 → 즉시 카트 추가 를 App.tsx가 결정 */
   onSelectProduct: (product: MenuProduct) => void
   onOrder?: () => void
+  aiMessage?: string
 }
 
 export function EasyMenuSelectScreen({
@@ -43,6 +42,7 @@ export function EasyMenuSelectScreen({
   onRemoveFromCart,
   onSelectProduct,
   onOrder,
+  aiMessage,
 }: EasyMenuSelectScreenProps) {
   const { products } = useMenuCatalog()
   const [categorySelection, setCategorySelection] =
@@ -105,7 +105,7 @@ export function EasyMenuSelectScreen({
         ))}
       </div>
       <ProgressBar />
-      <AISpeechDisplay />
+      <AISpeechDisplay message={aiMessage} listening={!!aiMessage} />
       <EasyCartBar
         items={cartItems}
         onIncrement={onIncrementCart}

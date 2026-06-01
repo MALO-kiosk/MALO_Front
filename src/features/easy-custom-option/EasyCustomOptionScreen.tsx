@@ -29,8 +29,8 @@ export type EasyCustomOptionScreenProps = {
   panelTitle?: string
   onCancelOrder?: () => void
   onAddMenu?: () => void
-  /** 직원 호출 */
   onStaffCall?: () => void
+  aiMessage?: string
 }
 
 export function EasyCustomOptionScreen({
@@ -41,6 +41,7 @@ export function EasyCustomOptionScreen({
   onCancelOrder,
   onAddMenu,
   onStaffCall,
+  aiMessage,
 }: EasyCustomOptionScreenProps) {
   const { shotQty, syrupQty, pearlQtys, sweetness, temp, size } = orderLine
 
@@ -181,7 +182,7 @@ export function EasyCustomOptionScreen({
         </Fragment>
       ))}
 
-      <AISpeechDisplay />
+      <AISpeechDisplay message={aiMessage} listening={!!aiMessage} />
       <EasyCartBarTotal
         imageSrc={orderLine.imageSrc}
         menuName={orderLine.name}

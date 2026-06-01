@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import voiceSynonyms from '@/config/voiceSynonyms.json'
 
 export type VoiceAIStep =
   | 'STEP1_GREETING'
@@ -11,7 +12,22 @@ export type VoiceAIStep =
   | 'STEP8_COMPLETE'
 
 export type VoiceAIAction = {
-  type: 'ADD_CART' | 'SELECT_OPTION' | 'CONFIRM_ORDER' | 'SET_PAYMENT' | 'SET_STAMP' | 'SET_RECEIPT'
+  type:
+    | 'ADD_CART'
+    | 'SELECT_OPTION'
+    | 'SELECT_CUP'
+    | 'OPEN_CUSTOM_OPTION'
+    | 'ADD_LINE_TO_CART'
+    | 'SET_SHOT'
+    | 'SET_SYRUP'
+    | 'SET_SWEETNESS'
+    | 'SET_PEARL'
+    | 'CONFIRM_ORDER'
+    | 'SET_PAYMENT'
+    | 'SET_STAMP'
+    | 'SET_RECEIPT'
+    | 'GO_HOME'
+    | 'GO_BACK'
   payload: Record<string, unknown>
 }
 
@@ -21,11 +37,7 @@ export type VoiceAIEvent = {
   action?: VoiceAIAction
 }
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
-
-/** 요청 사이 최소 간격 (ms) — 무료 티어 429 방지 */
-const MIN_REQUEST_INTERVAL_MS = 2000
+export const GREETING_MESSAGE = '안녕하세요! 원하시는 메뉴를 말씀해 주시거나 선택해 주세요.'
 
 export function speak(text: string, onEnd?: () => void) {
   if (!window.speechSynthesis) return
@@ -47,77 +59,293 @@ export function speak(text: string, onEnd?: () => void) {
   }, 50)
 }
 
-const SYSTEM_PROMPT = `당신은 키오스크 브랜드 'MALO'의 친절하고 직관적인 AI 서비스 도우미입니다.
+function normalize(text: string): string {
+  return text.replace(/\s/g, '').toLowerCase()
+}
 
-[출력 포맷 규칙]
-1. 마크다운 백틱이나 json이라는 단어를 절대 붙이지 마세요. 오직 순수한 JSON 문자열만 반환하세요.
-2. 답변은 1~2문장의 간결한 구어체(~요, ~세요)로만 작성하세요.
-3. "화면을 전환하겠습니다" 같은 UI 제어 멘트는 절대 하지 마세요.
+function matchesAny(text: string, keywords: string[]): boolean {
+  const norm = normalize(text)
+  return keywords.some((k) => norm.includes(normalize(k)))
+}
 
-[출력 JSON 포맷] nextStep과 action은 필요할 때만 포함:
-{"aiResponse":"말풍선 텍스트","nextStep":"STEP값(선택)","action":{"type":"액션타입","payload":{}}}
+function matchTranscript(transcript: string, currentStep: VoiceAIStep): VoiceAIEvent | null {
+  // 네비게이션 명령 최우선
+  if (matchesAny(transcript, voiceSynonyms.navigation.exit)) {
+    return { aiResponse: '처음 화면으로 돌아갑니다.', action: { type: 'GO_HOME', payload: {} } }
+  }
+  if (matchesAny(transcript, voiceSynonyms.navigation.back)) {
+    return { aiResponse: '이전 화면으로 돌아갑니다.', action: { type: 'GO_BACK', payload: {} } }
+  }
 
-[단계별 행동]
+  switch (currentStep) {
+    case 'STEP2_MENU_SELECT': {
+      // 메뉴 이름 먼저 체크 (구체적일수록 우선)
+      for (const menu of voiceSynonyms.menus) {
+        if (matchesAny(transcript, menu.synonyms)) {
+          return {
+            aiResponse: `${menu.name} 선택하셨습니다. 온도와 사이즈를 선택해 주세요.`,
+            action: { type: 'ADD_CART', payload: { menuName: menu.name, count: 1 } },
+            nextStep: 'STEP3_OPTION_SELECT',
+          }
+        }
+      }
+      // 장바구니에 담긴 아이템을 결제 화면으로
+      if (matchesAny(transcript, voiceSynonyms.order.confirm)) {
+        return {
+          aiResponse: '주문 내역을 확인해 드릴게요.',
+          nextStep: 'STEP4_CONFIRM',
+        }
+      }
+      return null
+    }
 
-STEP2_MENU_SELECT: 사용자가 메뉴를 말하면
-→ action: {"type":"ADD_CART","payload":{"menuName":"메뉴명","count":수량}}
-→ 음료/커피라면 nextStep: "STEP3_OPTION_SELECT"
+    case 'STEP3_OPTION_SELECT': {
+      const co = voiceSynonyms.customOptions
 
-STEP3_OPTION_SELECT: 온도/사이즈 물어보기
-→ 옵션 받으면 action: {"type":"SELECT_OPTION","payload":{"temp":"ice|hot","size":"regular|large"}}
-→ "더 없어"/"주문할래"/"장바구니로" 등 주문 의사 표현 시 nextStep: "STEP4_CONFIRM"
+      // 온도
+      if (matchesAny(transcript, voiceSynonyms.options.ice)) {
+        return {
+          aiResponse: '아이스로 선택하셨습니다.',
+          action: { type: 'SELECT_OPTION', payload: { temp: 'ice' } },
+        }
+      }
+      if (matchesAny(transcript, voiceSynonyms.options.hot)) {
+        return {
+          aiResponse: '핫으로 선택하셨습니다.',
+          action: { type: 'SELECT_OPTION', payload: { temp: 'hot' } },
+        }
+      }
 
-STEP4_CONFIRM: 장바구니 내역 확인
-→ 동의하면 action: {"type":"CONFIRM_ORDER","payload":{}} + nextStep: "STEP5_PAYMENT"
+      // 사이즈
+      if (matchesAny(transcript, voiceSynonyms.options.large)) {
+        return {
+          aiResponse: '라지 사이즈로 선택하셨습니다.',
+          action: { type: 'SELECT_OPTION', payload: { size: 'large' } },
+        }
+      }
+      if (matchesAny(transcript, voiceSynonyms.options.regular)) {
+        return {
+          aiResponse: '레귤러 사이즈로 선택하셨습니다.',
+          action: { type: 'SELECT_OPTION', payload: { size: 'regular' } },
+        }
+      }
 
-STEP5_PAYMENT: "신용카드와 카카오페이 중 어떤 것으로 결제하시겠어요?" 질문
-→ 선택하면 action: {"type":"SET_PAYMENT","payload":{"method":"CARD|KAKAO"}}
+      // 컵 선택
+      if (matchesAny(transcript, voiceSynonyms.cup.mug)) {
+        return {
+          aiResponse: '머그컵으로 선택하셨습니다.',
+          action: { type: 'SELECT_CUP', payload: { cup: 'mug' } },
+        }
+      }
+      if (matchesAny(transcript, voiceSynonyms.cup.personal)) {
+        return {
+          aiResponse: '개인컵으로 선택하셨습니다.',
+          action: { type: 'SELECT_CUP', payload: { cup: 'personal' } },
+        }
+      }
 
-STEP6_STAMP: "스탬프를 적립하시겠어요? 안 하시려면 안해 라고 말씀해 주세요."
-→ 거절: action: {"type":"SET_STAMP","payload":{"earn":false}}
-→ 번호 말하면: action: {"type":"SET_STAMP","payload":{"earn":true,"phone":"숫자만"}}
+      // 당도
+      if (matchesAny(transcript, co.sweetness.more)) {
+        return {
+          aiResponse: '더 달게 설정했습니다.',
+          action: { type: 'SET_SWEETNESS', payload: { sweetness: 'more' } },
+        }
+      }
+      if (matchesAny(transcript, co.sweetness.less)) {
+        return {
+          aiResponse: '덜 달게 설정했습니다.',
+          action: { type: 'SET_SWEETNESS', payload: { sweetness: 'less' } },
+        }
+      }
+      if (matchesAny(transcript, co.sweetness.normal)) {
+        return {
+          aiResponse: '보통 당도로 설정했습니다.',
+          action: { type: 'SET_SWEETNESS', payload: { sweetness: 'normal' } },
+        }
+      }
 
-STEP7_RECEIPT: "영수증이 필요하신가요? 필요 없으시면 하지마 라고 말씀해 주세요."
-→ 거절: action: {"type":"SET_RECEIPT","payload":{"receipt":false}}
-→ 원함: action: {"type":"SET_RECEIPT","payload":{"receipt":true}}
+      // 샷: remove 먼저 → add 순서로 체크 (짧은 add 키워드가 remove 키워드를 포함하는 오매칭 방지)
+      if (matchesAny(transcript, co.shot.remove)) {
+        return {
+          aiResponse: '샷을 하나 뺐습니다.',
+          action: { type: 'SET_SHOT', payload: { delta: -1 } },
+        }
+      }
+      if (matchesAny(transcript, co.shot.add)) {
+        return {
+          aiResponse: '샷을 추가했습니다.',
+          action: { type: 'SET_SHOT', payload: { delta: 1 } },
+        }
+      }
 
-STEP8_COMPLETE: aiResponse는 항상 "주문이 완료됐습니다. 진동벨을 가지고 가주세요!"
+      // 시럽: remove 먼저
+      if (matchesAny(transcript, co.syrup.remove)) {
+        return {
+          aiResponse: '바닐라 시럽을 뺐습니다.',
+          action: { type: 'SET_SYRUP', payload: { delta: -1 } },
+        }
+      }
+      if (matchesAny(transcript, co.syrup.add)) {
+        return {
+          aiResponse: '바닐라 시럽을 추가했습니다.',
+          action: { type: 'SET_SYRUP', payload: { delta: 1 } },
+        }
+      }
 
-[MALO 메뉴 목록]
-스트로베리말차(3900원), 피치프라페(4200원), 아메리카노(3500원), 카페라떼(4000원),
-디카페인라떼(4300원), 청포도에이드(4500원), 캐모마일티(3800원),
-버터크루아상(3200원/디저트), 뉴욕치즈케이크(4800원/디저트), 소금빵(2900원/디저트),
-콜드브루(4100원), 유자민트티(3900원)`
+      // 펄: remove 먼저 체크 → add (예: "알로에빼"가 "알로에" add에 먼저 매칭되는 문제 방지)
+      const pearlEntries = [
+        { index: 0, name: '타피오카펄', add: co.pearl.tapioca.add, remove: co.pearl.tapioca.remove },
+        { index: 1, name: '화이트펄',   add: co.pearl.white.add,   remove: co.pearl.white.remove   },
+        { index: 2, name: '알로에',     add: co.pearl.aloe.add,    remove: co.pearl.aloe.remove    },
+      ]
+      for (const { index, name, add, remove } of pearlEntries) {
+        if (matchesAny(transcript, remove)) {
+          return {
+            aiResponse: `${name}을 뺐습니다.`,
+            action: { type: 'SET_PEARL', payload: { pearlIndex: index, delta: -1 } },
+          }
+        }
+        if (matchesAny(transcript, add)) {
+          return {
+            aiResponse: `${name}을 추가했습니다.`,
+            action: { type: 'SET_PEARL', payload: { pearlIndex: index, delta: 1 } },
+          }
+        }
+      }
 
-export const GREETING_MESSAGE = '안녕하세요! 원하시는 메뉴를 말씀해 주시거나 선택해 주세요.'
+      // 맞춤 옵션 화면으로 이동
+      if (matchesAny(transcript, co.open)) {
+        return {
+          aiResponse: '맞춤 옵션 화면으로 이동합니다.',
+          action: { type: 'OPEN_CUSTOM_OPTION', payload: {} },
+        }
+      }
+
+      // 장바구니에 담기 → 메뉴 선택 화면으로 복귀
+      if (matchesAny(transcript, co.addToCart)) {
+        return {
+          aiResponse: '장바구니에 담았습니다.',
+          action: { type: 'ADD_LINE_TO_CART', payload: {} },
+          // nextStep 없음 → App.tsx가 easy-menu-select로 이동
+        }
+      }
+
+      // 주문 확인 → 현재 아이템 장바구니 담은 뒤 주문 확인 화면으로
+      if (matchesAny(transcript, voiceSynonyms.order.confirm)) {
+        return {
+          aiResponse: '주문 내역을 확인해 드릴게요.',
+          action: { type: 'ADD_LINE_TO_CART', payload: {} },
+          nextStep: 'STEP4_CONFIRM',
+        }
+      }
+
+      return null
+    }
+
+    case 'STEP4_CONFIRM': {
+      if (matchesAny(transcript, voiceSynonyms.order.confirm)) {
+        return {
+          aiResponse: '결제 수단을 선택해 주세요.',
+          action: { type: 'CONFIRM_ORDER', payload: {} },
+          nextStep: 'STEP5_PAYMENT',
+        }
+      }
+      return null
+    }
+
+    case 'STEP5_PAYMENT': {
+      // 결제 화면: 모바일 페이 / 쿠폰사용 / 할인 수단 / 앱 카드 / 신용카드
+      const { mobilePay, coupon, discount, appCard, creditCard } = voiceSynonyms.payment
+      const method = matchesAny(transcript, mobilePay)
+        ? 'MOBILE'
+        : matchesAny(transcript, coupon)
+          ? 'COUPON'
+          : matchesAny(transcript, discount)
+            ? 'DISCOUNT'
+            : matchesAny(transcript, appCard)
+              ? 'APP_CARD'
+              : matchesAny(transcript, creditCard)
+                ? 'CARD'
+                : null
+
+      if (method) {
+        const labels: Record<string, string> = {
+          MOBILE: '모바일 페이',
+          COUPON: '쿠폰',
+          DISCOUNT: '할인 수단',
+          APP_CARD: '앱 카드',
+          CARD: '신용카드',
+        }
+        return {
+          aiResponse: `${labels[method]}로 결제하겠습니다.`,
+          action: { type: 'SET_PAYMENT', payload: { method } },
+        }
+      }
+      return null
+    }
+
+    case 'STEP6_STAMP': {
+      if (matchesAny(transcript, voiceSynonyms.stamp.skip)) {
+        return {
+          aiResponse: '스탬프 적립을 건너뜁니다.',
+          action: { type: 'SET_STAMP', payload: { earn: false } },
+        }
+      }
+      // 숫자 10자리 이상 → 전화번호로 인식
+      const digits = transcript.replace(/[^0-9]/g, '')
+      if (digits.length >= 10) {
+        return {
+          aiResponse: '스탬프를 적립하겠습니다.',
+          action: { type: 'SET_STAMP', payload: { earn: true, phone: digits } },
+        }
+      }
+      return null
+    }
+
+    case 'STEP7_RECEIPT': {
+      if (matchesAny(transcript, voiceSynonyms.receipt.no)) {
+        return {
+          aiResponse: '영수증을 건너뜁니다.',
+          action: { type: 'SET_RECEIPT', payload: { receipt: false } },
+        }
+      }
+      if (matchesAny(transcript, voiceSynonyms.receipt.yes)) {
+        return {
+          aiResponse: '영수증을 출력하겠습니다.',
+          action: { type: 'SET_RECEIPT', payload: { receipt: true } },
+        }
+      }
+      return null
+    }
+
+    default:
+      return null
+  }
+}
 
 export function useVoiceAI({
   currentStep,
-  cartSummary,
   onEvent,
   onListeningChange,
 }: {
   currentStep: VoiceAIStep
-  cartSummary: string
+  cartSummary?: string
   onEvent: (event: VoiceAIEvent) => void
   onListeningChange?: (listening: boolean) => void
 }) {
   const stateRef = useRef({
     currentStep,
-    cartSummary,
     onEvent,
     onListeningChange,
     isProcessing: false,
-    lastRequestAt: 0,
   })
   stateRef.current.currentStep = currentStep
-  stateRef.current.cartSummary = cartSummary
   stateRef.current.onEvent = onEvent
   stateRef.current.onListeningChange = onListeningChange
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognitionAPI: (new () => SpeechRecognition) | undefined =
+    const SpeechRecognitionAPI: (new () => any) | undefined =
       (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
     if (!SpeechRecognitionAPI) return
 
@@ -127,72 +355,70 @@ export function useVoiceAI({
     recognition.lang = 'ko-KR'
 
     let stopped = false
+    // TTS 재생 중임을 표시 — onresult가 TTS 에코를 무시하도록 사용
     let ttsInProgress = false
 
     const setListening = (v: boolean) => stateRef.current.onListeningChange?.(v)
 
-    recognition.onstart = () => setListening(true)
+    recognition.onstart = () => {
+      console.log('[STT] 🎙️ 인식 시작')
+      setListening(true)
+    }
 
-    recognition.onresult = async (event: SpeechRecognitionEvent) => {
+    recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
+      console.warn('[STT] ⚠️ 인식 오류:', e.error, e.message)
+    }
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const last = event.results[event.results.length - 1]
       if (!last.isFinal) return
       const transcript = last[0].transcript.trim()
       const state = stateRef.current
 
-      if (!transcript || state.isProcessing || ttsInProgress) return
+      console.log('[STT] 📝 인식된 발화:', transcript)
 
-      const now = Date.now()
-      if (now - state.lastRequestAt < MIN_REQUEST_INTERVAL_MS) return
+      if (!transcript) return
+      if (state.isProcessing) {
+        console.log('[STT] ⏭️ 이미 처리 중 — 무시')
+        return
+      }
+      // TTS 재생 중이거나 speechSynthesis가 말하는 중이면 에코로 판단하고 무시
+      if (ttsInProgress || window.speechSynthesis.speaking) {
+        console.log('[STT] ⏭️ TTS 에코 — 무시')
+        return
+      }
 
-      setListening(false)
       state.isProcessing = true
-      state.lastRequestAt = now
-      const { currentStep: step, cartSummary: cart, onEvent: emit } = state
+      setListening(false)
 
-      try {
-        const userMessage =
-          `[현재 단계: ${step}]\n[장바구니: ${cart}]\n사용자 발화: "${transcript}"`
-        const res = await fetch(GEMINI_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-          }),
-        })
+      const matched = matchTranscript(transcript, state.currentStep)
+      console.log('[STT] 🔍 매칭 결과:', matched)
 
-        if (res.status === 429) {
-          stateRef.current.lastRequestAt = Date.now() + 3000
-          return
-        }
-
-        const data = await res.json()
-        const raw: string = (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim()
-        const parsed: VoiceAIEvent = JSON.parse(raw)
-
-        // TTS 재생 후 STT 재개 — utt.onend 콜백으로 처리 (SpeechSynthesis 객체는 end 이벤트 없음)
+      if (matched) {
+        // STT를 멈추지 않고 계속 유지 — TTS 종료 즉시 사용자 발화를 받을 수 있도록
         ttsInProgress = true
-        recognition.stop()
-        speak(parsed.aiResponse, () => {
+        speak(matched.aiResponse, () => {
+          console.log('[TTS] ✅ 재생 완료')
           ttsInProgress = false
-          if (!stopped) recognition.start()
+          state.isProcessing = false
+          setListening(true)
         })
-
-        emit(parsed)
-      } catch {
-        ttsInProgress = false
-        // silently ignore network/parse errors
-      } finally {
-        stateRef.current.isProcessing = false
+        state.onEvent(matched)
+      } else {
+        // 매칭 없음 — 즉시 리셋
+        state.isProcessing = false
+        setListening(true)
       }
     }
 
+    // 브라우저가 자동으로 세션을 종료한 경우 (타임아웃 등) 항상 재시작
     recognition.onend = () => {
+      console.log('[STT] 🔇 인식 세션 종료 — 재시작')
       setListening(false)
-      // TTS 재생 중 STT가 종료된 경우 ttsInProgress의 onEnd 콜백이 재시작 담당
-      if (!stopped && !ttsInProgress) recognition.start()
+      if (!stopped) recognition.start()
     }
 
+    console.log('[STT] 🚀 음성 인식 초기화 완료')
     recognition.start()
 
     return () => {
@@ -201,5 +427,5 @@ export function useVoiceAI({
       recognition.stop()
       window.speechSynthesis.cancel()
     }
-  }, []) // runs once — live state accessed via stateRef
+  }, [])
 }

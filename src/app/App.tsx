@@ -81,6 +81,8 @@ export default function App() {
   const [started, setStarted] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [page, setPage] = useState<AppPage>('easy-menu-select')
+  const pageRef = useRef<AppPage>('easy-menu-select')
+  pageRef.current = page
   const [aiMessage, setAiMessage] = useState(GREETING_MESSAGE)
 
   const displayMessage = isListening ? '듣는 중입니다...' : aiMessage
@@ -123,6 +125,9 @@ export default function App() {
   const [easyOrderLine, setEasyOrderLine] = useState<OrderLineDraft>(
     createDefaultOrderLineDraft,
   )
+  const easyOrderLineRef = useRef(easyOrderLine)
+  easyOrderLineRef.current = easyOrderLine
+
   const [easyCartDrafts, setEasyCartDrafts] = useState<OrderLineDraft[]>([])
 
   const patchEasyOrderLine = useCallback((patch: Partial<OrderLineDraft>) => {
@@ -181,6 +186,25 @@ export default function App() {
 
       if (event.action) {
         switch (event.action.type) {
+          case 'GO_HOME':
+            goHome()
+            skipNextStepNav = true
+            break
+          case 'GO_BACK': {
+            const prevPageMap: Partial<Record<AppPage, AppPage>> = {
+              'easy-option': 'easy-menu-select',
+              'easy-custom-option': customOptionReturnPage.current,
+              'order-confirm-2': 'easy-menu-select',
+              payment: 'order-confirm-2',
+              'stamp-input': 'payment',
+              'order-complete-receipt': 'stamp-input',
+            }
+            const prev = prevPageMap[pageRef.current]
+            if (prev) setPage(prev)
+            else goHome()
+            skipNextStepNav = true
+            break
+          }
           case 'ADD_CART': {
             const menuName = String(event.action.payload.menuName ?? '')
             const count = Number(event.action.payload.count ?? 1)
@@ -208,6 +232,56 @@ export default function App() {
             const { temp, size } = event.action.payload
             if (temp === 'ice' || temp === 'hot') patchEasyOrderLine({ temp })
             if (size === 'regular' || size === 'large') patchEasyOrderLine({ size })
+            break
+          }
+          case 'SELECT_CUP': {
+            const { cup } = event.action.payload
+            if (cup === 'mug' || cup === 'personal') patchEasyOrderLine({ cup })
+            break
+          }
+          case 'OPEN_CUSTOM_OPTION': {
+            customOptionReturnPage.current = pageRef.current === 'easy-option' ? 'easy-option' : 'easy-menu-select'
+            setPage('easy-custom-option')
+            skipNextStepNav = true
+            break
+          }
+          case 'ADD_LINE_TO_CART': {
+            addToEasyCart(easyOrderLineRef.current)
+            if (!event.nextStep) {
+              // nextStep 없으면 메뉴 선택 화면으로 복귀 (담기 버튼 동작)
+              setPage('easy-menu-select')
+              skipNextStepNav = true
+            }
+            // nextStep 있으면 (e.g. STEP4_CONFIRM) 아래 nextStep 네비게이션이 처리
+            break
+          }
+          case 'SET_SHOT': {
+            const delta = Number(event.action.payload.delta ?? 0)
+            setEasyOrderLine((prev) => ({ ...prev, shotQty: Math.max(0, prev.shotQty + delta) }))
+            break
+          }
+          case 'SET_SYRUP': {
+            const delta = Number(event.action.payload.delta ?? 0)
+            setEasyOrderLine((prev) => ({ ...prev, syrupQty: Math.max(0, prev.syrupQty + delta) }))
+            break
+          }
+          case 'SET_SWEETNESS': {
+            const { sweetness } = event.action.payload
+            if (sweetness === 'more' || sweetness === 'normal' || sweetness === 'less') {
+              patchEasyOrderLine({ sweetness })
+            }
+            break
+          }
+          case 'SET_PEARL': {
+            const pearlIndex = Number(event.action.payload.pearlIndex ?? 0)
+            const delta = Number(event.action.payload.delta ?? 0)
+            if (pearlIndex >= 0 && pearlIndex <= 2) {
+              setEasyOrderLine((prev) => {
+                const next = [...prev.pearlQtys] as [number, number, number]
+                next[pearlIndex] = Math.max(0, next[pearlIndex] + delta)
+                return { ...prev, pearlQtys: next }
+              })
+            }
             break
           }
           case 'CONFIRM_ORDER':
@@ -239,7 +313,7 @@ export default function App() {
         if (nextPage) setPage(nextPage)
       }
     },
-    [addToEasyCart, handlePaymentDone, handleStampSubmit, patchEasyOrderLine, stopGreetingLoop],
+    [addToEasyCart, goHome, handlePaymentDone, handleStampSubmit, patchEasyOrderLine, stopGreetingLoop],
   )
 
   useVoiceAI({

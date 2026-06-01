@@ -3,14 +3,16 @@ import personIcon from '@/assets/icons/person_icon.svg'
 import './AISpeechDisplay.css'
 
 export type AISpeechDisplayProps = {
-  /** 안내 문구 */
   message?: string
+  /** 마이크 활성 상태 — true일 때 말풍선 테두리 펄스 효과 */
+  listening?: boolean
   className?: string
   style?: CSSProperties
 }
 
 export function AISpeechDisplay({
   message = '원하시는 음료를 선택해주세요',
+  listening = false,
   className,
   style,
 }: AISpeechDisplayProps) {
@@ -20,7 +22,7 @@ export function AISpeechDisplay({
 
   return (
     <div className={rootClass} style={style}>
-      <div className="ai-speech-display__bubble">
+      <div className={`ai-speech-display__bubble${listening ? ' ai-speech-display__bubble--listening' : ''}`}>
         <p className="ai-speech-display__text">{message}</p>
       </div>
       <img
