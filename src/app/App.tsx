@@ -101,9 +101,11 @@ export default function App() {
   pageRef.current = page
 
   // ── 쉬운모드 음성 AI 상태 ──────────────────────────────────────────────
+  const [isEasyMode, setIsEasyMode] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [aiMessage, setAiMessage] = useState(GREETING_MESSAGE)
-  const displayMessage = isListening ? '듣는 중입니다...' : aiMessage
+  // 쉬운모드일 때만 AI 말풍선 표시
+  const displayMessage = isEasyMode ? (isListening ? '듣는 중입니다...' : aiMessage) : undefined
 
   // 인사말 반복 루프 제어
   const greetingActiveRef = useRef(false)
@@ -186,6 +188,7 @@ export default function App() {
 
   // 쉬운모드 진입: 인사말 루프 시작 + easy-menu-select 이동
   const handleSelectEasy = useCallback(() => {
+    setIsEasyMode(true)
     setPage('easy-menu-select')
     greetingActiveRef.current = true
 
@@ -418,7 +421,7 @@ export default function App() {
           <ModeSelectScreen
             onGoHome={goHome}
             onSelectEasy={handleSelectEasy}
-            onSelectNormal={() => setPage('common-menu-select')}
+            onSelectNormal={() => { setIsEasyMode(false); setPage('common-menu-select') }}
             onStaffCall={callStaff}
           />
         )
