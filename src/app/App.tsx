@@ -102,7 +102,7 @@ export default function App() {
 
   // ── 쉬운모드 음성 AI 상태 ──────────────────────────────────────────────
   const [isEasyMode, setIsEasyMode] = useState(false)
-  const [isListening, setIsListening] = useState(false)
+  const [_isListening, setIsListening] = useState(false)
   const [aiMessage, setAiMessage] = useState(GREETING_MESSAGE)
   const [currentTranscript, setCurrentTranscript] = useState('')
   // 쉬운모드일 때만 AI 말풍선 표시 — 사용자가 말하는 중이면 실시간 발화 우선
