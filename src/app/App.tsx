@@ -28,10 +28,12 @@ import StampInput from '@/features/home/StampInput'
 import StampProgress from '@/features/home/StampProgress'
 import { HomeScreen } from '@/features/home'
 import { ModeSelectScreen } from '@/features/mode-select'
+import { BannerAdminPage } from '@/features/admin/BannerAdminPage'
 import { OrderFlowShell } from './OrderFlowShell'
 
 type AppPage =
   | 'home'
+  | 'admin'
   | 'mode-select'
   | 'easy-menu-select'
   | 'easy-option'
@@ -96,7 +98,8 @@ function mergeIntoDrafts(
 
 export default function App() {
   // ── 페이지 상태 (develop 유지: 초기값 'home') ──────────────────────────
-  const [page, setPage] = useState<AppPage>('home')
+  const isAdminUrl = new URLSearchParams(window.location.search).has('admin')
+  const [page, setPage] = useState<AppPage>(isAdminUrl ? 'admin' : 'home')
   const pageRef = useRef<AppPage>('home')
   pageRef.current = page
 
@@ -650,6 +653,9 @@ export default function App() {
         return null
     }
   }
+
+  // 어드민 페이지는 StageViewport 밖에서 풀페이지로 렌더
+  if (page === 'admin') return <BannerAdminPage />
 
   return (
     <StageViewport>
