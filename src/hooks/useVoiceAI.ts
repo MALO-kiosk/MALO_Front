@@ -409,18 +409,34 @@ function matchTranscript(
       }
 
       const top = candidates[0]!
+      const topScore = top.similarity
 
-      if (top.similarity >= AUTO_SELECT_THRESHOLD) {
-        console.log(`선택: 자동 선택 (${Math.round(top.similarity * 100)}%)`)
+      // 최고 점수 동률 후보 전체 수집
+      const topTied = candidates.filter((c) => Math.abs(c.similarity - topScore) < 0.001)
+
+      if (topScore >= AUTO_SELECT_THRESHOLD && topTied.length === 1) {
+        // 단독 1위이면서 임계값 이상 → 자동 선택
+        console.log(`선택: 자동 선택 (${Math.round(topScore * 100)}%)`)
         console.groupEnd()
         return buildMenuEvent(top.entry)
       }
 
-      // 65~89%: 사용자 확인 필요
+      if (topScore >= AUTO_SELECT_THRESHOLD && topTied.length > 1) {
+        // 동률 복수 → 무조건 사용자 선택 요청 (점수가 아무리 높아도 불가)
+        const names = topTied.map((c) => c.entry.name).join(', ')
+        console.log(`선택: 동률 다중 후보 선택 요청 (${Math.round(topScore * 100)}% × ${topTied.length}개)`)
+        console.groupEnd()
+        return {
+          aiResponse: `${names} 중에서 어떤 메뉴를 원하시나요?`,
+          __candidates: topTied,
+        }
+      }
+
+      // 65~89%: 단독 1위이면 yes/no 확인, 그렇지 않으면 선택지 제시
       const isConfirmMode =
-        candidates.length === 1 || top.similarity - (candidates[1]?.similarity ?? 0) >= 0.15
+        topTied.length === 1 && (candidates.length === 1 || topScore - (candidates[1]?.similarity ?? 0) >= 0.15)
       if (isConfirmMode) {
-        console.log(`선택: 단일 후보 확인 요청 (${Math.round(top.similarity * 100)}%)`)
+        console.log(`선택: 단일 후보 확인 요청 (${Math.round(topScore * 100)}%)`)
         console.groupEnd()
         return {
           aiResponse: `혹시 ${top.entry.name}${eulRul(top.entry.name)} 말씀하셨나요?`,
@@ -428,7 +444,7 @@ function matchTranscript(
         }
       }
 
-      // 여러 후보가 비슷한 점수
+      // 여러 후보가 비슷한 점수 (동률 포함)
       const topFew = candidates.slice(0, 3)
       const names = topFew.map((c) => c.entry.name).join(', ')
       console.log(`선택: 다중 후보 선택 요청 (상위 ${topFew.length}개)`)
