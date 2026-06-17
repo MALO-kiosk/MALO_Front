@@ -358,6 +358,18 @@ function matchTranscript(
 
   switch (currentStep) {
     case 'STEP2_MENU_SELECT': {
+      // ── ① Intent 판별 — 메뉴 매칭보다 항상 먼저 실행 ──────────────────
+      // 여기에 새 음성 명령(Intent)을 추가하면 메뉴 검색보다 우선 처리됨.
+
+      // 주문 확정 Intent → 주문 확인 화면 이동
+      if (matchesAny(transcript, voiceSynonyms.order.start)) {
+        return {
+          aiResponse: '주문 내역을 확인해 드릴게요.',
+          nextStep: 'STEP4_CONFIRM',
+        }
+      }
+
+      // ── ② 메뉴 매칭 (Intent에 해당하지 않는 발화에만 실행) ────────────
       const isQuestion = matchesAny(transcript, voiceSynonyms.questions.existence)
       const qty = extractQuantity(transcript)
 
