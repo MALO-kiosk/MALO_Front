@@ -277,10 +277,7 @@ export default function App() {
             const menuName = String(event.action.payload.menuName ?? '')
             const count = Number(event.action.payload.count ?? 1)
             const cleanName = (s: string) => s.replace(/\s/g, '')
-            // Supabase 최신 메뉴 우선, 없으면 정적 카탈로그 폴백
-            const catalog = liveMenuProductsRef.current.length > 0
-              ? liveMenuProductsRef.current
-              : MENU_CATALOG
+            const catalog = liveMenuProductsRef.current.length > 0 ? liveMenuProductsRef.current : MENU_CATALOG
             const product = catalog.find(
               (p) =>
                 p.name === menuName ||
@@ -392,6 +389,7 @@ export default function App() {
     onEvent: handleVoiceEvent,
     onListeningChange: setIsListening,
     onTranscriptChange: setCurrentTranscript,
+    menuProducts: liveMenuProducts,
   })
 
   // ── 상품 선택 처리 ─────────────────────────────────────────────────────

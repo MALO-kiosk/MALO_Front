@@ -3,6 +3,8 @@ import voiceSynonyms from '@/config/voiceSynonyms.json'
 import type { MenuProduct } from '@/data/menuCatalog'
 import { isDesertProduct } from '@/data/menuCatalog'
 
+// ─── 공개 타입 ──────────────────────────────────────────────────────────────
+
 export type VoiceAIStep =
   | 'STEP1_GREETING'
   | 'STEP2_MENU_SELECT'
@@ -40,23 +42,42 @@ export type VoiceAIEvent = {
   action?: VoiceAIAction
 }
 
-/** matchTranscript 내부용 — 복수 후보 정보를 onresult로 전달하는 마커 */
-type InternalVoiceEvent = VoiceAIEvent & { __candidates?: MenuEntry[] }
+/** 내부 전용: 메뉴 후보 리스트를 실어 disambiguation 흐름으로 진입 */
+type InternalVoiceEvent = VoiceAIEvent & {
+  __candidates?: MenuMatchCandidate[]
+}
 
-/** 동적 메뉴 엔트리 — Supabase 메뉴 데이터 기반으로 생성 */
+/** 관리자 페이지에서 가져온 메뉴를 음성 매칭에 쓰는 형태 */
 export type MenuEntry = {
   name: string
   synonyms: string[]
   isDesert: boolean
 }
 
+/** 유사도 점수가 붙은 후보 */
+export type MenuMatchCandidate = {
+  entry: MenuEntry
+  similarity: number
+}
+
+// ─── 상수 ───────────────────────────────────────────────────────────────────
+
 export const GREETING_MESSAGE = '안녕하세요! 원하시는 메뉴를 말씀해 주시거나 선택해 주세요.'
+
+/** ≥ 이 값이면 자동 선택 (STT 미세 오류 수준) */
+const AUTO_SELECT_THRESHOLD = 0.90
+/** ≥ 이 값이면 후보로 표시해 사용자 확인 요청 */
+const CONFIRM_THRESHOLD = 0.65
+/** disambiguation 최대 시도 횟수 */
+const MAX_DISAMBIG_ATTEMPTS = 3
+/** disambiguation 세션 타임아웃 (ms) */
+const DISAMBIG_TIMEOUT_MS = 30_000
+
+// ─── TTS ────────────────────────────────────────────────────────────────────
 
 export function speak(text: string, onEnd?: () => void) {
   if (!window.speechSynthesis) return
   window.speechSynthesis.cancel()
-
-  // Chrome bug: cancel() 직후 speak() 하면 무시되는 경우가 있어 50ms 지연
   setTimeout(() => {
     window.speechSynthesis.resume()
     const utt = new SpeechSynthesisUtterance(text)
@@ -64,12 +85,75 @@ export function speak(text: string, onEnd?: () => void) {
     utt.rate = 1.05
     utt.pitch = 1.0
     if (onEnd) utt.onend = onEnd
-
     const voices = window.speechSynthesis.getVoices()
     const koVoice = voices.find((v) => v.lang.startsWith('ko'))
     if (koVoice) utt.voice = koVoice
     window.speechSynthesis.speak(utt)
   }, 50)
+}
+
+// ─── 한국어 자모 분해 기반 발음 유사도 ─────────────────────────────────────
+
+/** 한글 자모 — 19 초성, 21 중성, 28 종성(공란 포함) */
+const INITIALS = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'
+const VOWELS   = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ'
+const FINALS   = ' ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ'
+
+/** 완성형 한글 음절을 초성+중성(+종성) 자모 문자열로 분해 */
+function decomposeJamo(str: string): string {
+  return [...str]
+    .map((ch) => {
+      const code = ch.charCodeAt(0)
+      if (code < 0xac00 || code > 0xd7a3) return ch
+      const n = code - 0xac00
+      const fin = n % 28
+      const vow = Math.floor(n / 28) % 21
+      const ini = Math.floor(n / 28 / 21)
+      return INITIALS[ini]! + VOWELS[vow]! + (fin > 0 ? FINALS[fin]! : '')
+    })
+    .join('')
+}
+
+/**
+ * 현대 한국어에서 동일하게 발음되는 자모를 통일해 STT 오인식에 강하게 만든다.
+ *   ㅐ/ㅒ → ㅔ/ㅖ: 현대 표준어에서 사실상 구분 없음 (예: 배/베, 얘/예)
+ */
+function phoneticNormalize(jamo: string): string {
+  return jamo.replace(/ㅐ/g, 'ㅔ').replace(/ㅒ/g, 'ㅖ')
+}
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length
+  const n = b.length
+  if (!m) return n
+  if (!n) return m
+  let prev = Array.from({ length: n + 1 }, (_, j) => j)
+  for (let i = 1; i <= m; i++) {
+    const curr = [i, ...Array<number>(n).fill(0)]
+    for (let j = 1; j <= n; j++) {
+      curr[j] =
+        a[i - 1] === b[j - 1]
+          ? prev[j - 1]!
+          : 1 + Math.min(prev[j]!, curr[j - 1]!, prev[j - 1]!)
+    }
+    prev = curr
+  }
+  return prev[n]!
+}
+
+/**
+ * 두 한국어 문자열의 자모 단위 발음 유사도를 0~1 로 반환한다.
+ * 1 = 완전 일치, 0 = 완전 다름.
+ *
+ * ㅐ↔ㅔ 와 같이 현대 한국어에서 동일 발음인 자모를 정규화하므로
+ * "우배라떼" vs "우베라떼"처럼 STT 가 흔히 혼동하는 쌍도 1.0 반환.
+ */
+function jamoSimilarity(a: string, b: string): number {
+  const ja = phoneticNormalize(decomposeJamo(a))
+  const jb = phoneticNormalize(decomposeJamo(b))
+  const dist = levenshtein(ja, jb)
+  const maxLen = Math.max(ja.length, jb.length)
+  return maxLen === 0 ? 1 : 1 - dist / maxLen
 }
 
 // ─── 헬퍼 함수 ─────────────────────────────────────────────────────────────
@@ -83,7 +167,6 @@ function matchesAny(text: string, keywords: string[]): boolean {
   return keywords.some((k) => norm.includes(normalize(k)))
 }
 
-/** 받침 유무에 따라 을/를 반환 */
 function eulRul(name: string): '을' | '를' {
   const last = name[name.length - 1]
   if (!last) return '을'
@@ -92,24 +175,17 @@ function eulRul(name: string): '을' | '를' {
   return (code - 0xac00) % 28 === 0 ? '를' : '을'
 }
 
-/**
- * 주문 의도 표현 및 후행 조사를 제거해 핵심 메뉴명만 추출한다.
- * 예) "아메리카노를 시켜줘" → "아메리카노"
- */
 function stripOrderIntent(transcript: string): string {
   let text = normalize(transcript)
   for (const word of voiceSynonyms.orderIntent) {
     text = text.replaceAll(normalize(word), '')
   }
-  // 수량 표현 제거 (하나, 두개, 세잔 등)
   text = text.replace(/[일이삼사오육칠팔구십]+(개|잔|그릇|병)?/g, '')
   text = text.replace(/\d+(개|잔)?/g, '')
-  // 후행 조사 제거
   text = text.replace(/(을|를|이|가|은|는|으로|로|와|과|랑|이랑|도|만)$/, '')
   return text.trim()
 }
 
-/** 발화에서 한국어 수량 표현을 파싱한다. 없으면 1 반환 */
 function extractQuantity(transcript: string): number {
   const norm = normalize(transcript)
   const map: Array<[string, number]> = [
@@ -123,167 +199,135 @@ function extractQuantity(transcript: string): number {
     if (norm.includes(normalize(word))) return n
   }
   const m = transcript.match(/(\d+)\s*(?:개|잔)/)
-  if (m) return Math.min(10, parseInt(m[1], 10))
+  if (m) return Math.min(10, parseInt(m[1]!, 10))
   return 1
 }
 
-/** 질문 조사("있어요" 등)를 제거한 핵심 메뉴 키워드 추출 */
 function extractKeyword(transcript: string): string {
   return transcript
     .replace(/있어요|있나요|있나|파나요|되나요|있습니까|있죠|주세요|줘|드릴게요|주문할게요|주문할래요|원해요/g, '')
     .trim()
 }
 
-// ─── 동적 메뉴 엔트리 생성 ─────────────────────────────────────────────────
+// ─── 메뉴 카탈로그 관리 ─────────────────────────────────────────────────────
 
-type StaticMenu = { name: string; synonyms: string[]; isDesert: boolean }
-
-/**
- * Supabase 메뉴 목록 → MenuEntry 변환.
- * 메뉴명에서 자동 유사어(공백 제거, 단어 분리)를 생성하고
- * voiceSynonyms.json 정적 유사어가 있으면 병합한다.
- */
-export function buildMenuEntries(products: MenuProduct[]): MenuEntry[] {
-  const staticMenus = voiceSynonyms.menus as StaticMenu[]
-  return products.map((p) => {
-    const words = p.name.split(/\s+/).filter((w) => w.length >= 2)
-    const autoSynonyms = [p.name, p.name.replace(/\s/g, ''), ...words]
-    const staticEntry = staticMenus.find((m) => normalize(m.name) === normalize(p.name))
-    const staticSynonyms = staticEntry?.synonyms ?? []
-    return {
-      name: p.name,
-      synonyms: [...new Set([...autoSynonyms, ...staticSynonyms])],
-      isDesert: isDesertProduct(p),
-    }
-  })
-}
-
-/** Supabase 미로드 시 폴백 — voiceSynonyms.json 정적 목록 사용 */
-const FALLBACK_MENU_ENTRIES: MenuEntry[] = (voiceSynonyms.menus as StaticMenu[]).map((m) => ({
+/** voiceSynonyms.json 을 MenuEntry[] 형태로 변환한 fallback */
+const FALLBACK_MENU_ENTRIES: MenuEntry[] = voiceSynonyms.menus.map((m) => ({
   name: m.name,
   synonyms: m.synonyms,
   isDesert: m.isDesert,
 }))
 
-function getActiveMenuEntries(products: MenuProduct[]): MenuEntry[] {
-  return products.length > 0 ? buildMenuEntries(products) : FALLBACK_MENU_ENTRIES
-}
+/**
+ * Supabase 에서 받아 온 MenuProduct[] 를 음성 인식용 MenuEntry[] 로 변환.
+ * - 자동 생성 유사어: 공백 제거 이름 + 공백 분리 단어(2자 이상)
+ * - voiceSynonyms.json 에 같은 메뉴가 있으면 수동 유사어를 병합
+ */
+export function buildMenuEntries(products: MenuProduct[]): MenuEntry[] {
+  return products.map((p) => {
+    const nameTrimmed = p.name.replace(/\s/g, '')
+    const autoSynonyms = [p.name, nameTrimmed, ...p.name.split(/\s+/).filter((w) => w.length >= 2)]
 
-// ─── 유사도 매칭 ───────────────────────────────────────────────────────────
+    const staticEntry = voiceSynonyms.menus.find(
+      (m) => normalize(m.name) === normalize(p.name),
+    )
+    const staticSynonyms = staticEntry ? staticEntry.synonyms : []
 
-/** 레벤슈타인 거리 — STT 오인식 대비 퍼지 매칭용 */
-function levenshtein(a: string, b: string): number {
-  const m = a.length, n = b.length
-  if (m === 0) return n
-  if (n === 0) return m
-  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
-  )
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i]![j] =
-        a[i - 1] === b[j - 1]
-          ? dp[i - 1]![j - 1]!
-          : 1 + Math.min(dp[i - 1]![j]!, dp[i]![j - 1]!, dp[i - 1]![j - 1]!)
+    const merged = [...new Set([...autoSynonyms, ...staticSynonyms].map(normalize))]
+
+    return {
+      name: p.name,
+      synonyms: merged,
+      isDesert: isDesertProduct(p),
     }
-  }
-  return dp[m]![n]!
+  })
 }
+
+// ─── 자모 유사도 기반 메뉴 후보 스코어링 ────────────────────────────────────
 
 /**
- * 발화에서 유사 메뉴를 찾는다.
- * ① 부분 문자열 매칭 → ② 레벤슈타인 퍼지 매칭 순으로 시도.
+ * 발화(transcript)와 메뉴 목록을 비교해 유사도 순으로 정렬된 후보를 반환.
+ *
+ * ■ 핵심 개선점 — substring 포함 비교(includes)를 제거하고
+ *   전체 문자열 자모 유사도로만 판단하므로:
+ *     "우베라떼".includes("라떼") = true 에 의한 카페라떼 오매칭 방지
+ *     "우배라떼" ↔ "우베라떼" (ㅐ→ㅔ 정규화 후 100%) 정상 매칭
+ *
+ * ■ 검색 대상: 전체 발화 / 의도 제거 후 / 원문의 개별 단어(공백 분리)
+ *   → "아이스 우베라떼 주세요" 에서도 "우베라떼" 단어가 매칭
  */
-function findSimilarMenu(transcript: string, menus: MenuEntry[]): MenuEntry | null {
+function scoreMenuCandidates(
+  transcript: string,
+  menus: MenuEntry[],
+): MenuMatchCandidate[] {
+  const fullNorm = normalize(transcript)
   const stripped = stripOrderIntent(transcript)
-  const searchText = stripped || transcript
-  const words = searchText.split(/\s+/).map(normalize).filter((w) => w.length >= 2)
 
-  for (const word of words) {
-    for (const menu of menus) {
-      const menuNorm = normalize(menu.name)
-      if (menuNorm.includes(word) || word.includes(menuNorm)) return menu
-      for (const syn of menu.synonyms) {
-        const synNorm = normalize(syn)
-        if (synNorm.includes(word) || word.includes(synNorm)) return menu
+  // 원문의 공백 분리 단어도 개별 비교
+  const words = transcript
+    .trim()
+    .split(/\s+/)
+    .map(normalize)
+    .filter((w) => w.length >= 2)
+
+  const searchTexts = [...new Set([fullNorm, stripped, ...words].filter(Boolean))]
+
+  const results: MenuMatchCandidate[] = []
+  for (const entry of menus) {
+    let best = 0
+    for (const syn of [entry.name, ...entry.synonyms]) {
+      const synNorm = normalize(syn)
+      for (const q of searchTexts) {
+        const sim = jamoSimilarity(q, synNorm)
+        if (sim > best) best = sim
       }
     }
-  }
-
-  for (const word of words) {
-    if (word.length < 3) continue
-    for (const menu of menus) {
-      const menuNorm = normalize(menu.name)
-      const threshold = Math.floor(menuNorm.length * 0.3)
-      if (threshold > 0 && levenshtein(word, menuNorm) <= threshold) return menu
+    if (best >= CONFIRM_THRESHOLD) {
+      results.push({ entry, similarity: best })
     }
   }
-
-  return null
+  return results.sort((a, b) => b.similarity - a.similarity)
 }
 
-// ─── 후보 선택(disambiguation) 해소 ───────────────────────────────────────
+// ─── Disambiguation 로직 ────────────────────────────────────────────────────
 
 /**
- * 후보 목록 안에서 발화를 엄격하게 매칭해 ADD_CART 이벤트를 반환한다.
- *
- * 일반 메뉴 검색과 달리 개별 단어 유사어를 사용하지 않고
- * 후보 메뉴명 전체(공백 무시)만 대상으로 비교하기 때문에
- * "주스"처럼 여러 메뉴에 공통되는 단어로 인한 오매칭을 방지한다.
- *
- * 매칭 순서:
- *   1. 정규화된 전체 이름 정확 일치
- *   2. 발화가 후보 이름을 포함하거나, 후보 이름이 발화를 포함 (유일 후보만)
- *   3. 레벤슈타인 퍼지 매칭 (후보 이름 길이의 30% 허용)
- * 주문 의도 표현 제거 후에도 재시도한다.
+ * 여러 후보 중 사용자가 말한 발화로 하나를 특정한다.
+ * - 단일 확인 모드(yes/no): 후보가 1개일 때 긍정·부정 응답 처리
+ * - 다중 선택 모드: 자모 유사도로 최고 득점 후보 반환 (단, clear winner 필요)
  */
 function resolveDisambiguation(
   transcript: string,
-  candidates: MenuEntry[],
-  qty: number,
-): VoiceAIEvent | null {
-  const normRaw = normalize(transcript)
-  const normStripped = stripOrderIntent(transcript)
-  const toTry = [...new Set([normRaw, normStripped].filter(Boolean))]
+  candidates: MenuMatchCandidate[],
+  isConfirmMode: boolean,
+): { resolved: MenuEntry | null; userSaidNo?: boolean } {
+  if (isConfirmMode && candidates.length === 1) {
+    const isYes = matchesAny(transcript, ['네', '응', '맞아', '맞아요', '맞습니다', '예', '맞어'])
+    const isNo  = matchesAny(transcript, ['아니', '아니요', '아니오', '틀려', '다른거', '아닌데'])
+    if (isYes) return { resolved: candidates[0]!.entry }
+    if (isNo)  return { resolved: null, userSaidNo: true }
+  }
 
-  for (const searchText of toTry) {
-    // 1. 정확한 이름 일치
-    for (const c of candidates) {
-      if (normalize(c.name) === searchText) return buildCandidateEvent(c, qty)
-    }
+  // 발화를 후보 이름들과 자모 유사도 비교
+  const scored = candidates.map((c) => ({
+    c,
+    sim: jamoSimilarity(normalize(transcript), normalize(c.entry.name)),
+  }))
+  scored.sort((a, b) => b.sim - a.sim)
 
-    // 2. 이름 포함 관계 — 유일한 후보만 선택 (2개 이상이면 null)
-    const nameMatches = candidates.filter((c) => {
-      const normName = normalize(c.name)
-      return searchText.includes(normName) || normName.includes(searchText)
-    })
-    if (nameMatches.length === 1) return buildCandidateEvent(nameMatches[0]!, qty)
+  const top = scored[0]
+  const second = scored[1]
 
-    // 3. 레벤슈타인 퍼지 매칭
-    for (const c of candidates) {
-      const normName = normalize(c.name)
-      const threshold = Math.floor(normName.length * 0.3)
-      if (threshold > 0 && levenshtein(searchText, normName) <= threshold) {
-        return buildCandidateEvent(c, qty)
-      }
+  if (top && top.sim >= CONFIRM_THRESHOLD) {
+    if (!second || top.sim - second.sim >= 0.15) {
+      return { resolved: top.c.entry }
     }
   }
 
-  return null
+  return { resolved: null }
 }
 
-function buildCandidateEvent(menu: MenuEntry, qty: number): VoiceAIEvent {
-  const response = menu.isDesert
-    ? `${menu.name}${eulRul(menu.name)} 장바구니에 담았습니다. 추가로 주문하실 메뉴가 있으신가요?`
-    : `옵션을 선택해 주세요. 추가 옵션이 필요하신가요?`
-  return {
-    aiResponse: response,
-    action: { type: 'ADD_CART', payload: { menuName: menu.name, count: qty } },
-    nextStep: 'STEP3_OPTION_SELECT',
-  }
-}
-
-// ─── 매칭 ──────────────────────────────────────────────────────────────────
+// ─── 메인 매칭 함수 ─────────────────────────────────────────────────────────
 
 function matchTranscript(
   transcript: string,
@@ -317,76 +361,82 @@ function matchTranscript(
       const isQuestion = matchesAny(transcript, voiceSynonyms.questions.existence)
       const qty = extractQuantity(transcript)
 
-      const buildMenuEvent = (menu: MenuEntry): InternalVoiceEvent => {
+      const buildMenuEvent = (entry: MenuEntry): VoiceAIEvent => {
         if (isQuestion) {
           return {
-            aiResponse: `네, ${menu.name} 있습니다. 장바구니에 담아드릴게요.`,
-            action: { type: 'ADD_CART', payload: { menuName: menu.name, count: qty } },
+            aiResponse: `네, ${entry.name} 있습니다. 장바구니에 담아드릴게요.`,
+            action: { type: 'ADD_CART', payload: { menuName: entry.name, count: qty } },
             nextStep: 'STEP3_OPTION_SELECT',
           }
         }
-        const response = menu.isDesert
-          ? `${menu.name}${eulRul(menu.name)} 장바구니에 담았습니다. 추가로 주문하실 메뉴가 있으신가요?`
+        const response = entry.isDesert
+          ? `${entry.name}${eulRul(entry.name)} 장바구니에 담았습니다. 추가로 주문하실 메뉴가 있으신가요?`
           : `옵션을 선택해 주세요. 추가 옵션이 필요하신가요?`
         return {
           aiResponse: response,
-          action: { type: 'ADD_CART', payload: { menuName: menu.name, count: qty } },
+          action: { type: 'ADD_CART', payload: { menuName: entry.name, count: qty } },
           nextStep: 'STEP3_OPTION_SELECT',
         }
       }
 
-      // ① 원문 발화 그대로 매칭 — 복수 후보 시 __candidates 마커를 달아 반환
-      const directMatches = menus.filter((m) => matchesAny(transcript, m.synonyms))
-      if (directMatches.length === 1) return buildMenuEvent(directMatches[0]!)
-      if (directMatches.length > 1) {
-        const names = directMatches.map((m) => m.name).join(', ')
-        return {
-          aiResponse: `${names} 중에서 어떤 메뉴를 원하시나요? 정확한 메뉴명을 말씀해 주세요.`,
-          __candidates: directMatches,
-        }
+      // ── 자모 유사도 스코어링 ──
+      const candidates = scoreMenuCandidates(transcript, menus)
+
+      // 디버그 로그
+      console.group(`[STT] 📝 "${transcript}"`)
+      if (candidates.length > 0) {
+        console.log(
+          '후보:',
+          candidates.map((c) => `${c.entry.name} ${Math.round(c.similarity * 100)}%`).join(' / '),
+        )
+      } else {
+        console.log('후보: 없음')
       }
 
-      // ② 주문 의도·조사 제거 후 재매칭
-      const stripped = stripOrderIntent(transcript)
-      if (stripped && stripped !== normalize(transcript)) {
-        const strippedMatches = menus.filter((m) => matchesAny(stripped, m.synonyms))
-        if (strippedMatches.length === 1) return buildMenuEvent(strippedMatches[0]!)
-        if (strippedMatches.length > 1) {
-          const names = strippedMatches.map((m) => m.name).join(', ')
-          return {
-            aiResponse: `${names} 중에서 어떤 메뉴를 원하시나요? 정확한 메뉴명을 말씀해 주세요.`,
-            __candidates: strippedMatches,
-          }
-        }
-      }
+      if (candidates.length === 0) {
+        console.log('선택: 매칭 없음')
+        console.groupEnd()
 
-      // ③ 없는 메뉴 요청 — 유사 메뉴 추천 또는 안내
-      if (isQuestion || transcript.length >= 2) {
-        const keyword = extractKeyword(transcript)
-        if (keyword) {
-          const similar = findSimilarMenu(keyword || transcript, menus)
-          if (similar) {
+        if (isQuestion || transcript.length >= 2) {
+          const keyword = extractKeyword(transcript)
+          if (keyword) {
             return {
-              aiResponse: `현재 ${keyword} 메뉴가 없습니다. 그 대신 ${similar.name}${eulRul(similar.name)} 추천합니다.`,
-            }
-          }
-          if (isQuestion) {
-            return {
-              aiResponse: `죄송합니다, 현재 ${keyword} 관련 메뉴가 준비되어 있지 않습니다. 다른 메뉴를 말씀해 주세요.`,
+              aiResponse: `죄송합니다, ${keyword} 관련 메뉴가 현재 준비되어 있지 않습니다. 다른 메뉴를 말씀해 주세요.`,
             }
           }
         }
+        return null
       }
 
-      // ④ 주문 확인 화면으로
-      if (matchesAny(transcript, voiceSynonyms.order.confirm)) {
+      const top = candidates[0]!
+
+      if (top.similarity >= AUTO_SELECT_THRESHOLD) {
+        console.log(`선택: 자동 선택 (${Math.round(top.similarity * 100)}%)`)
+        console.groupEnd()
+        return buildMenuEvent(top.entry)
+      }
+
+      // 65~89%: 사용자 확인 필요
+      const isConfirmMode =
+        candidates.length === 1 || top.similarity - (candidates[1]?.similarity ?? 0) >= 0.15
+      if (isConfirmMode) {
+        console.log(`선택: 단일 후보 확인 요청 (${Math.round(top.similarity * 100)}%)`)
+        console.groupEnd()
         return {
-          aiResponse: '주문 내역을 확인해 드릴게요.',
-          nextStep: 'STEP4_CONFIRM',
+          aiResponse: `혹시 ${top.entry.name}${eulRul(top.entry.name)} 말씀하셨나요?`,
+          __candidates: [top],
         }
       }
 
-      return null
+      // 여러 후보가 비슷한 점수
+      const topFew = candidates.slice(0, 3)
+      const names = topFew.map((c) => c.entry.name).join(', ')
+      console.log(`선택: 다중 후보 선택 요청 (상위 ${topFew.length}개)`)
+      console.groupEnd()
+      return {
+        aiResponse: `${names} 중에서 어떤 메뉴를 원하시나요?`,
+        __candidates: topFew,
+      }
     }
 
     case 'STEP3_OPTION_SELECT': {
@@ -487,7 +537,9 @@ function matchTranscript(
                 ? 'CARD'
                 : null
       if (method) {
-        const labels: Record<string, string> = { MOBILE: '모바일 페이', COUPON: '쿠폰', DISCOUNT: '할인 수단', APP_CARD: '앱 카드', CARD: '신용카드' }
+        const labels: Record<string, string> = {
+          MOBILE: '모바일 페이', COUPON: '쿠폰', DISCOUNT: '할인 수단', APP_CARD: '앱 카드', CARD: '신용카드',
+        }
         return {
           aiResponse: `${labels[method]}로 결제하겠습니다. 잠시만 기다려 주세요.`,
           action: { type: 'SET_PAYMENT', payload: { method } },
@@ -526,45 +578,38 @@ function matchTranscript(
 
 export function useVoiceAI({
   currentStep,
-  menuProducts,
   onEvent,
   onListeningChange,
   onTranscriptChange,
+  menuProducts,
 }: {
   currentStep: VoiceAIStep
-  menuProducts?: MenuProduct[]
   cartSummary?: string
   onEvent: (event: VoiceAIEvent) => void
   onListeningChange?: (listening: boolean) => void
   onTranscriptChange?: (transcript: string) => void
+  /** Supabase 에서 받아 온 최신 메뉴 목록. 없으면 voiceSynonyms.json 사용 */
+  menuProducts?: MenuProduct[]
 }) {
   const stateRef = useRef({
     currentStep,
     onEvent,
     onListeningChange,
     onTranscriptChange,
+    menuProducts,
     isProcessing: false,
-    menuProducts: menuProducts ?? [],
-    // ── 후보 선택 대기 상태 ─────────────────────────────────────────────
-    pendingCandidates: null as MenuEntry[] | null,
+    // ── Disambiguation 상태 ──
+    pendingCandidates: null as MenuMatchCandidate[] | null,
     pendingQty: 1,
+    pendingIsConfirmMode: false,
     pendingAttempts: 0,
     pendingTimeout: null as ReturnType<typeof setTimeout> | null,
   })
-
   stateRef.current.currentStep = currentStep
   stateRef.current.onEvent = onEvent
   stateRef.current.onListeningChange = onListeningChange
   stateRef.current.onTranscriptChange = onTranscriptChange
-  stateRef.current.menuProducts = menuProducts ?? []
-
-  // 단계가 STEP2 밖으로 이동하면 후보 대기 상태를 자동 초기화
-  if (currentStep !== 'STEP2_MENU_SELECT' && stateRef.current.pendingCandidates !== null) {
-    if (stateRef.current.pendingTimeout) clearTimeout(stateRef.current.pendingTimeout)
-    stateRef.current.pendingCandidates = null
-    stateRef.current.pendingAttempts = 0
-    stateRef.current.pendingTimeout = null
-  }
+  stateRef.current.menuProducts = menuProducts
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -580,8 +625,37 @@ export function useVoiceAI({
     let stopped = false
     let ttsInProgress = false
 
-    const setListening = (v: boolean) => stateRef.current.onListeningChange?.(v)
-    const setTranscript = (t: string) => stateRef.current.onTranscriptChange?.(t)
+    const state = stateRef.current
+
+    const setListening = (v: boolean) => state.onListeningChange?.(v)
+    const setTranscript = (t: string) => state.onTranscriptChange?.(t)
+
+    function getActiveMenuEntries(): MenuEntry[] {
+      const products = state.menuProducts
+      if (products && products.length > 0) return buildMenuEntries(products)
+      return FALLBACK_MENU_ENTRIES
+    }
+
+    function clearDisambiguationState() {
+      if (state.pendingTimeout !== null) {
+        clearTimeout(state.pendingTimeout)
+        state.pendingTimeout = null
+      }
+      state.pendingCandidates = null
+      state.pendingQty = 1
+      state.pendingIsConfirmMode = false
+      state.pendingAttempts = 0
+    }
+
+    function fireEvent(ev: VoiceAIEvent) {
+      ttsInProgress = true
+      speak(ev.aiResponse, () => {
+        ttsInProgress = false
+        state.isProcessing = false
+        setListening(true)
+      })
+      state.onEvent(ev)
+    }
 
     recognition.onstart = () => {
       console.log('[STT] 🎙️ 인식 시작')
@@ -597,9 +671,8 @@ export function useVoiceAI({
     }
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const last = event.results[event.results.length - 1]
-      const transcript = last[0].transcript.trim()
-      const state = stateRef.current
+      const last = event.results[event.results.length - 1]!
+      const transcript = last[0]!.transcript.trim()
 
       if (!last.isFinal) {
         if (ttsInProgress || window.speechSynthesis.speaking) {
@@ -612,7 +685,7 @@ export function useVoiceAI({
       }
 
       setTranscript('')
-      console.log('[STT] 📝 인식된 발화:', transcript)
+      console.log('[STT] 🎤 최종 발화:', transcript)
 
       if (!transcript) return
       if (state.isProcessing) {
@@ -627,88 +700,83 @@ export function useVoiceAI({
       state.isProcessing = true
       setListening(false)
 
-      const menus = getActiveMenuEntries(state.menuProducts)
-      let matched: VoiceAIEvent | null = null
-
+      // ── Disambiguation 세션 중 ──────────────────────────────────────────
       if (state.pendingCandidates !== null) {
-        // ── 후보 선택 대기 중 ────────────────────────────────────────────
-        // 전역 명령(직원호출/홈/뒤로/취소)은 항상 우선 처리
-        const globalResult = matchTranscript(transcript, state.currentStep, menus)
-        const isGlobal =
-          globalResult?.action?.type === 'CALL_STAFF' ||
-          globalResult?.action?.type === 'GO_HOME' ||
-          globalResult?.action?.type === 'GO_BACK'
-
-        if (isGlobal) {
-          // 전역 명령 → 후보 상태 초기화
-          if (state.pendingTimeout) clearTimeout(state.pendingTimeout)
-          state.pendingCandidates = null
-          state.pendingAttempts = 0
-          state.pendingTimeout = null
-          matched = globalResult
-        } else {
-          // 후보 목록 내 엄격 매칭 시도
-          matched = resolveDisambiguation(transcript, state.pendingCandidates, state.pendingQty)
-          if (matched) {
-            // 해소 성공 → 상태 초기화
-            if (state.pendingTimeout) clearTimeout(state.pendingTimeout)
-            state.pendingCandidates = null
-            state.pendingAttempts = 0
-            state.pendingTimeout = null
-            console.log('[STT] ✅ 후보 선택 해소:', matched.action?.payload?.menuName)
-          } else {
-            state.pendingAttempts++
-            console.log(`[STT] ❓ 후보 선택 실패 (${state.pendingAttempts}/3)`)
-            if (state.pendingAttempts >= 3) {
-              // 3회 실패 → 포기, 처음부터
-              if (state.pendingTimeout) clearTimeout(state.pendingTimeout)
-              state.pendingCandidates = null
-              state.pendingAttempts = 0
-              state.pendingTimeout = null
-              matched = { aiResponse: '죄송합니다. 처음부터 원하시는 메뉴를 다시 말씀해 주세요.' }
-            } else {
-              const names = state.pendingCandidates.map((m) => m.name).join(', ')
-              matched = { aiResponse: `${names} 중에서 원하시는 메뉴를 다시 말씀해 주세요.` }
-            }
-          }
+        // 전역 명령(직원 호출, 취소 등)은 disambiguation 중에도 동작
+        const globalEvent = matchTranscript(transcript, 'STEP1_GREETING', getActiveMenuEntries())
+        if (globalEvent?.action?.type === 'CALL_STAFF' || globalEvent?.action?.type === 'GO_HOME') {
+          clearDisambiguationState()
+          fireEvent(globalEvent)
+          return
         }
-      } else {
-        // ── 일반 흐름 ────────────────────────────────────────────────────
-        const internalResult = matchTranscript(transcript, state.currentStep, menus)
 
-        if (internalResult?.__candidates) {
-          // 복수 후보 발견 → 후보 대기 상태 저장
-          state.pendingCandidates = internalResult.__candidates
-          state.pendingQty = extractQuantity(transcript)
-          state.pendingAttempts = 0
-          // 30초 타임아웃 — 장시간 응답 없을 경우 자동 초기화
-          if (state.pendingTimeout) clearTimeout(state.pendingTimeout)
-          state.pendingTimeout = setTimeout(() => {
-            console.log('[STT] ⏰ 후보 선택 타임아웃 — 상태 초기화')
-            state.pendingCandidates = null
-            state.pendingAttempts = 0
-            state.pendingTimeout = null
-          }, 30_000)
-          // __candidates 제거 후 이벤트 발행
-          const { __candidates: _ignored, ...cleanEvent } = internalResult
-          matched = cleanEvent
-          console.log('[STT] 🔀 후보 대기 시작:', state.pendingCandidates.map(m => m.name))
-        } else {
-          matched = internalResult
+        const { resolved, userSaidNo } = resolveDisambiguation(
+          transcript,
+          state.pendingCandidates,
+          state.pendingIsConfirmMode,
+        )
+
+        if (resolved) {
+          const qty = state.pendingQty
+          clearDisambiguationState()
+          const ev: VoiceAIEvent = resolved.isDesert
+            ? {
+                aiResponse: `${resolved.name}${eulRul(resolved.name)} 장바구니에 담았습니다. 추가로 주문하실 메뉴가 있으신가요?`,
+                action: { type: 'ADD_CART', payload: { menuName: resolved.name, count: qty } },
+                nextStep: 'STEP3_OPTION_SELECT',
+              }
+            : {
+                aiResponse: `옵션을 선택해 주세요. 추가 옵션이 필요하신가요?`,
+                action: { type: 'ADD_CART', payload: { menuName: resolved.name, count: qty } },
+                nextStep: 'STEP3_OPTION_SELECT',
+              }
+          fireEvent(ev)
+          return
         }
+
+        if (userSaidNo) {
+          clearDisambiguationState()
+          fireEvent({ aiResponse: '알겠습니다. 원하시는 메뉴를 다시 말씀해 주세요.' })
+          return
+        }
+
+        // 특정 실패 — 재시도
+        state.pendingAttempts++
+        if (state.pendingAttempts >= MAX_DISAMBIG_ATTEMPTS) {
+          clearDisambiguationState()
+          fireEvent({ aiResponse: '죄송합니다. 원하시는 메뉴를 다시 처음부터 말씀해 주세요.' })
+        } else {
+          const names = state.pendingCandidates.map((c) => c.entry.name).join(', ')
+          const ev: VoiceAIEvent = state.pendingIsConfirmMode
+            ? { aiResponse: `${state.pendingCandidates[0]!.entry.name}${eulRul(state.pendingCandidates[0]!.entry.name)} 맞으신가요? 네/아니오로 답해 주세요.` }
+            : { aiResponse: `다시 여쭤볼게요. ${names} 중 어떤 메뉴인가요?` }
+          fireEvent(ev)
+        }
+        return
       }
 
-      console.log('[STT] 🔍 최종 매칭:', matched, '| 활성 메뉴 수:', menus.length)
+      // ── 일반 매칭 ──────────────────────────────────────────────────────
+      const menus = getActiveMenuEntries()
+      const matched = matchTranscript(transcript, state.currentStep, menus) as InternalVoiceEvent | null
 
-      if (matched) {
-        ttsInProgress = true
-        speak(matched.aiResponse, () => {
-          console.log('[TTS] ✅ 재생 완료')
-          ttsInProgress = false
+      if (matched?.__candidates) {
+        const candidates = matched.__candidates
+        const isConfirmMode = candidates.length === 1
+
+        state.pendingCandidates = candidates
+        state.pendingQty = extractQuantity(transcript)
+        state.pendingIsConfirmMode = isConfirmMode
+        state.pendingAttempts = 0
+
+        state.pendingTimeout = setTimeout(() => {
+          clearDisambiguationState()
           state.isProcessing = false
           setListening(true)
-        })
-        state.onEvent(matched)
+        }, DISAMBIG_TIMEOUT_MS)
+
+        fireEvent({ aiResponse: matched.aiResponse })
+      } else if (matched) {
+        fireEvent(matched)
       } else {
         state.isProcessing = false
         setListening(true)
@@ -729,11 +797,8 @@ export function useVoiceAI({
       recognition.onend = null
       recognition.stop()
       window.speechSynthesis.cancel()
-      // 후보 선택 타임아웃 정리
-      if (stateRef.current.pendingTimeout) {
-        clearTimeout(stateRef.current.pendingTimeout)
-        stateRef.current.pendingTimeout = null
-      }
+      clearDisambiguationState()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 }
