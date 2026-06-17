@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMenuCatalog } from '@/lib/useMenuCatalog'
 import { StageViewport } from '@/components/layout'
 import { STAGE_HEIGHT, STAGE_WIDTH } from '@/config/stage'
@@ -97,6 +97,13 @@ function mergeIntoDrafts(
 }
 
 export default function App() {
+  // ── 우클릭 컨텍스트 메뉴 전역 비활성화 ────────────────────────────────
+  useEffect(() => {
+    const disableContextMenu = (e: MouseEvent) => e.preventDefault()
+    document.addEventListener('contextmenu', disableContextMenu)
+    return () => document.removeEventListener('contextmenu', disableContextMenu)
+  }, [])
+
   // ── Supabase 메뉴 카탈로그 (음성 주문 기준 데이터) ─────────────────────
   const { products: liveMenuProducts } = useMenuCatalog()
   const liveMenuProductsRef = useRef<MenuProduct[]>(liveMenuProducts)
