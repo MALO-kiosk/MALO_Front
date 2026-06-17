@@ -509,6 +509,11 @@ export function useVoiceAI({
 
     recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
       console.warn('[STT] ⚠️ 인식 오류:', e.error, e.message)
+      // 마이크 없음·권한 거부는 재시도해도 같은 에러가 반복되므로 루프를 끊는다
+      if (e.error === 'not-allowed' || e.error === 'audio-capture') {
+        stopped = true
+        setListening(false)
+      }
     }
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
