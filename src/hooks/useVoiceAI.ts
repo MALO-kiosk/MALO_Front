@@ -267,17 +267,6 @@ export function buildMenuEntries(products: MenuProduct[]): MenuEntry[] {
 
 // ─── 자모 유사도 기반 메뉴 후보 스코어링 ────────────────────────────────────
 
-/**
- * 발화(transcript)와 메뉴 목록을 비교해 유사도 순으로 정렬된 후보를 반환.
- *
- * ■ 핵심 개선점 — substring 포함 비교(includes)를 제거하고
- *   전체 문자열 자모 유사도로만 판단하므로:
- *     "우베라떼".includes("라떼") = true 에 의한 카페라떼 오매칭 방지
- *     "우배라떼" ↔ "우베라떼" (ㅐ→ㅔ 정규화 후 100%) 정상 매칭
- *
- * ■ 검색 대상: 전체 발화 / 의도 제거 후 / 원문의 개별 단어(공백 분리)
- *   → "아이스 우베라떼 주세요" 에서도 "우베라떼" 단어가 매칭
- */
 function scoreMenuCandidates(
   transcript: string,
   menus: MenuEntry[],
@@ -285,30 +274,51 @@ function scoreMenuCandidates(
   const fullNorm = normalize(transcript)
   const stripped = stripOrderIntent(transcript)
 
-  // 원문의 공백 분리 단어도 개별 비교
-  const words = transcript
+  // Phase 1 쿼리: 전체 발화 기준 (단어 분리 없음)
+  // "고구마 라떼" → normalize → "고구마라떼" — "라떼" 단어를 독립 쿼리로 사용하지 않음
+  const primaryQueries = [...new Set([fullNorm, stripped].filter(Boolean))]
+
+  // Phase 2 쿼리: 공백 분리 단어 — "아이스 우베라떼"에서 "우베라떼" 단어 추출
+  const wordQueries = transcript
     .trim()
     .split(/\s+/)
     .map(normalize)
     .filter((w) => w.length >= 2)
 
-  const searchTexts = [...new Set([fullNorm, stripped, ...words].filter(Boolean))]
-
-  const results: MenuMatchCandidate[] = []
-  for (const entry of menus) {
-    let best = 0
-    for (const syn of [entry.name, ...entry.synonyms]) {
-      const synNorm = normalize(syn)
-      for (const q of searchTexts) {
-        const sim = jamoSimilarity(q, synNorm)
-        if (sim > best) best = sim
+  function computeScores(queries: string[]): MenuMatchCandidate[] {
+    const results: MenuMatchCandidate[] = []
+    for (const entry of menus) {
+      let best = 0
+      for (const syn of [entry.name, ...entry.synonyms]) {
+        const synNorm = normalize(syn)
+        for (const q of queries) {
+          const sim = jamoSimilarity(q, synNorm)
+          if (sim > best) best = sim
+        }
       }
+      if (best >= CONFIRM_THRESHOLD) results.push({ entry, similarity: best })
     }
-    if (best >= CONFIRM_THRESHOLD) {
-      results.push({ entry, similarity: best })
-    }
+    return results.sort((a, b) => b.similarity - a.similarity)
   }
-  return results.sort((a, b) => b.similarity - a.similarity)
+
+  // Phase 1: 전체 발화로 검색
+  // → "고구마 라떼": fullNorm="고구마라떼" → "고구마라떼" 메뉴 100% 매칭
+  // → 카페라떼의 유사어 "라떼"는 개별 단어로 쪼개지 않으므로 오매칭 없음
+  const phase1 = computeScores(primaryQueries)
+  const phase1Top = phase1[0]?.similarity ?? 0
+
+  if (phase1Top >= AUTO_SELECT_THRESHOLD) {
+    // 고신뢰도(≥90%) 전체 텍스트 매칭 → 단어 분리 없이 즉시 반환
+    return phase1
+  }
+
+  // Phase 2: 단어 분리 폴백 — 전체 발화가 저신뢰도이거나 후보 없을 때
+  // → "아이스 우베라떼": fullNorm 유사도 낮음 → 단어 "우베라떼" 100% 매칭
+  // → "우베라떼 두 개 주세요": stripped 유사도 낮음 → 단어 "우베라떼" 100% 매칭
+  const phase2 = computeScores(wordQueries)
+  const phase2Top = phase2[0]?.similarity ?? 0
+
+  return phase2Top > phase1Top ? phase2 : phase1
 }
 
 // ─── Disambiguation 로직 ────────────────────────────────────────────────────
