@@ -1,7 +1,13 @@
 import '../../styles/StampProgress.css';
 import OrderProcess from '../../components/common/Orderprocess';
 
-export default function StampProgress({ currentCount, totalCount, onNext }: any) {
+type StampProgressProps = {
+  currentCount: number
+  totalCount: number
+  onNext?: () => void
+}
+
+export default function StampProgress({ currentCount, totalCount, onNext }: StampProgressProps) {
   const progressWidth = (currentCount / totalCount) * 100;
   return (
     <div className="complete-page stamp-progress-view" style={{ position: 'relative', width: '1080px', height: '1920px' }}>

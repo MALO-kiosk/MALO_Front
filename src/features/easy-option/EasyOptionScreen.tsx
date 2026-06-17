@@ -22,16 +22,13 @@ export function cartSummarySpec(temp: TempChoice, size: SizeChoice): string {
 export type EasyOptionScreenProps = {
   orderLine: OrderLineDraft
   onOrderLineChange: (patch: Partial<OrderLineDraft>) => void
-  /** 처음으로 → 홈 */
   onGoHome?: () => void
-  /** 상단 옵션 안내 문구 */
   optionTitle?: string
-  /** 주문 취소 */
   onCancelOrder?: () => void
-  /** 메뉴 담기 */
   onAddMenu?: () => void
-  /** 맞춤 옵션 화면으로 이동 — `easy-option__custom-btn` */
   onOpenCustomOption: () => void
+  onStaffCall?: () => void
+  aiMessage?: string
 }
 
 export function EasyOptionScreen({
@@ -42,8 +39,10 @@ export function EasyOptionScreen({
   onCancelOrder,
   onAddMenu,
   onOpenCustomOption,
+  onStaffCall,
+  aiMessage,
 }: EasyOptionScreenProps) {
-  const { temp, size, cup } = orderLine
+  const { temp, size, cup, only_cold } = orderLine
 
   return (
     <div className="easy-option">
@@ -52,7 +51,7 @@ export function EasyOptionScreen({
         className="easy-option__back-frame"
         onHomeClick={onGoHome}
       />
-      <OutlineFrame variant="staff" className="easy-option__staff-frame" />
+      <OutlineFrame variant="staff" className="easy-option__staff-frame" onStaffCall={onStaffCall} />
       <TopWhitePanel className="easy-option__panel" heightPx={269}>
         <h1 className="easy-option__title">{optionTitle}</h1>
       </TopWhitePanel>
@@ -68,8 +67,9 @@ export function EasyOptionScreen({
         </button>
         <button
           type="button"
-          className={`easy-option__temp-btn ${temp === 'hot' ? 'easy-option__temp-btn--selected' : 'easy-option__temp-btn--unselected'}`}
+          className={`easy-option__temp-btn ${only_cold ? 'easy-option__temp-btn--disabled' : temp === 'hot' ? 'easy-option__temp-btn--selected' : 'easy-option__temp-btn--unselected'}`}
           aria-pressed={temp === 'hot'}
+          disabled={only_cold}
           onClick={() => onOrderLineChange({ temp: 'hot' })}
         >
           HOT
@@ -122,7 +122,7 @@ export function EasyOptionScreen({
         맞춤 옵션
       </button>
       <p className="easy-option__custom-hint">* 더 상세하게, 내 취향대로! *</p>
-      <AISpeechDisplay />
+      <AISpeechDisplay message={aiMessage} listening={!!aiMessage} />
       <EasyCartBarTotal
         imageSrc={orderLine.imageSrc}
         menuName={orderLine.name}

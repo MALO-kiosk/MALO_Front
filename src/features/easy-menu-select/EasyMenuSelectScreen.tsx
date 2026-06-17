@@ -1,5 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
-import menuStrawberryImg from '@/assets/images/menu_StrawberryMatcha.png'
+import { useMemo, useState } from 'react'
 import {
   AISpeechDisplay,
   EasyCartBar,
@@ -10,67 +9,60 @@ import {
   ProgressBar,
   TopWhitePanel,
   type EasyCartLineItem,
+  type MenuCategorySelection,
 } from '@/components/common'
+import {
+  filterMenuByCategory,
+  menuProductPriceLabel,
+  type MenuProduct,
+} from '@/data/menuCatalog'
+import { useMenuCatalog } from '@/lib/useMenuCatalog'
 import './EasyMenuSelectScreen.css'
 
-const MENU_STRAWBERRY = {
-  id: 'strawberry-matcha',
-  name: '스트로베리말차',
-  unitPriceWon: 3900,
-  imageSrc: menuStrawberryImg,
-}
+const COLS = 3
 
 export type EasyMenuSelectScreenProps = {
-  /** 처음으로 → 홈 */
   onGoHome?: () => void
-  /** 주문하기 → 장바구니 항목과 함께 다음 단계 */
-  onOrder?: (items: EasyCartLineItem[]) => void
+  onStaffCall?: () => void
+  cartItems: EasyCartLineItem[]
+  onIncrementCart: (id: string) => void
+  onDecrementCart: (id: string) => void
+  onRemoveFromCart: (id: string) => void
+  onSelectProduct: (product: MenuProduct) => void
+  onOrder?: () => void
+  aiMessage?: string
 }
 
 export function EasyMenuSelectScreen({
   onGoHome,
+  onStaffCall,
+  cartItems,
+  onIncrementCart,
+  onDecrementCart,
+  onRemoveFromCart,
+  onSelectProduct,
   onOrder,
+  aiMessage,
 }: EasyMenuSelectScreenProps) {
-  const [cartItems, setCartItems] = useState<EasyCartLineItem[]>([])
-
-  const addStrawberryToCart = useCallback(() => {
-    setCartItems((prev) => {
-      const i = prev.findIndex((x) => x.id === MENU_STRAWBERRY.id)
-      if (i === -1) {
-        return [...prev, { ...MENU_STRAWBERRY, quantity: 1 }]
-      }
-      const next = [...prev]
-      next[i] = {
-        ...next[i],
-        quantity: next[i].quantity + 1,
-      }
-      return next
+  const { products } = useMenuCatalog()
+  const [categorySelection, setCategorySelection] =
+    useState<MenuCategorySelection>({
+      menuCategory: 'coffee',
+      coffeeDetail: 'drink',
     })
-  }, [])
 
-  const handleIncrement = useCallback((id: string) => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item,
-      ),
-    )
-  }, [])
+  const visibleProducts = useMemo(
+    () => filterMenuByCategory(products, categorySelection),
+    [products, categorySelection],
+  )
 
-  const handleDecrement = useCallback((id: string) => {
-    setCartItems((prev) =>
-      prev.flatMap((item) => {
-        if (item.id !== id) return [item]
-        if (item.quantity <= 1) return []
-        return [{ ...item, quantity: item.quantity - 1 }]
-      }),
-    )
-  }, [])
-
-  const handleRemoveLine = useCallback((id: string) => {
-    setCartItems((prev) => prev.filter((x) => x.id !== id))
-  }, [])
+  const productRows = useMemo(() => {
+    const rows: MenuProduct[][] = []
+    for (let i = 0; i < visibleProducts.length; i += COLS) {
+      rows.push(visibleProducts.slice(i, i + COLS))
+    }
+    return rows
+  }, [visibleProducts])
 
   const totalCount = useMemo(
     () => cartItems.reduce((s, x) => s + x.quantity, 0),
@@ -78,15 +70,9 @@ export function EasyMenuSelectScreen({
   )
 
   const totalWon = useMemo(
-    () =>
-      cartItems.reduce(
-        (s, x) => s + x.unitPriceWon * x.quantity,
-        0,
-      ),
+    () => cartItems.reduce((s, x) => s + (x.unitPriceWon + x.additionalWon) * x.quantity, 0),
     [cartItems],
   )
-
-  const totalPriceLabel = totalWon.toLocaleString('ko-KR')
 
   return (
     <div className="easy-menu-select">
@@ -95,36 +81,47 @@ export function EasyMenuSelectScreen({
         className="easy-menu-select__back-frame"
         onHomeClick={onGoHome}
       />
-      <OutlineFrame variant="staff" className="easy-menu-select__staff-frame" />
+      <OutlineFrame
+        variant="staff"
+        className="easy-menu-select__staff-frame"
+        onStaffCall={onStaffCall}
+      />
       <TopWhitePanel as="main" autoHeight minHeightPx={287}>
-        <MenuCategoryTabs />
+        <MenuCategoryTabs
+          initialActiveId="coffee"
+          initialCoffeeDetail="drink"
+          onSelectionChange={setCategorySelection}
+        />
       </TopWhitePanel>
       <div className="easy-menu-select__menu-grid">
-        {Array.from({ length: 2 }, (_, row) => (
-          <div key={row} className="easy-menu-select__menu-row">
-            {Array.from({ length: 3 }, (_, i) => (
+        {productRows.map((row, rowIndex) => (
+          <div key={rowIndex} className="easy-menu-select__menu-row">
+            {row.map((product) => (
               <EasyMenu
-                key={`${row}-${i}`}
-                onSelect={addStrawberryToCart}
+                key={product.id}
+                name={product.name}
+                price={menuProductPriceLabel(product.unitPriceWon)}
+                imageSrc={product.imageSrc}
+                onSelect={() => onSelectProduct(product)}
               />
             ))}
           </div>
         ))}
       </div>
       <ProgressBar />
-      <AISpeechDisplay />
+      <AISpeechDisplay message={aiMessage} listening={!!aiMessage} />
       <EasyCartBar
         items={cartItems}
-        onIncrement={handleIncrement}
-        onDecrement={handleDecrement}
-        onRemoveLine={handleRemoveLine}
+        onIncrement={onIncrementCart}
+        onDecrement={onDecrementCart}
+        onRemoveLine={onRemoveFromCart}
       />
       <OrderTotalBar
         totalCount={totalCount}
-        totalPrice={totalPriceLabel}
+        totalPrice={totalWon.toLocaleString('ko-KR')}
         onOrder={() => {
           if (cartItems.length === 0) return
-          onOrder?.(cartItems)
+          onOrder?.()
         }}
       />
     </div>

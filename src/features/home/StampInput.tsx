@@ -1,8 +1,14 @@
-import { useState } from 'react';
-import '../../styles/StampInput.css';
-import OrderProcess from '../../components/common/Orderprocess';
+import { useState } from 'react'
+import { TopWhitePanel } from '@/components/common'
+import '../../styles/StampInput.css'
+import OrderProcess from '../../components/common/Orderprocess'
 
-export default function StampInput({ onNext }: any) {
+type StampInputProps = {
+  onNext?: (phoneNumber: string) => void
+  onSkip?: () => void
+}
+
+export default function StampInput({ onNext, onSkip }: StampInputProps) {
   const [phoneNumber, setPhoneNumber] = useState('010');
 
   const handleKeyPress = (val: string) => {
@@ -23,11 +29,12 @@ export default function StampInput({ onNext }: any) {
   };
 
   return (
-    <div className="complete-page">
-      <OrderProcess 
-        step={3} 
-        steps={['메뉴선택', '결제하기', '적립하기', '주문완료']} 
+    <div className="complete-page stamp-input-page">
+      <OrderProcess
+        step={3}
+        steps={['메뉴선택', '결제하기', '적립하기', '주문완료']}
       />
+      <TopWhitePanel className="stamp-input-page__panel" heightPx={269} />
       <div className="complete-card">
         <h1 className="complete-title">스탬프 적립</h1>
         <p className="stamp-input-sub">적립할 휴대폰 번호를 입력하세요!</p>
@@ -51,8 +58,12 @@ export default function StampInput({ onNext }: any) {
         </div>
 
         <div className="button-group">
-          <button className="no-btn" onClick={onNext}>적립안함</button>
-          <button className="yes-btn" onClick={onNext}>입력 완료</button>
+          <button type="button" className="no-btn" onClick={onSkip}>
+            적립안함
+          </button>
+          <button type="button" className="yes-btn" onClick={() => onNext?.(phoneNumber)}>
+            입력 완료
+          </button>
         </div>
       </div>
     </div>

@@ -2,12 +2,24 @@
 
 /* 배경 및 카드 레이아웃 */
 .complete-page {
-  position: fixed;
+  position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   background: #f6f9fe;
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.complete-page.payment-select-page {
+  background: #f8f8f8 !important;
+}
+
+.payment-select-page__panel {
+  z-index: 2;
 }
 
 .complete-title {

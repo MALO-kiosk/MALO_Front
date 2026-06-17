@@ -18,8 +18,9 @@ const THUMB_RANGE = TRACK_H - THUMB_H
 export type EasyCartLineItem = {
   id: string
   name: string
-  /** 단가(원) */
   unitPriceWon: number
+  /** 맞춤옵션 추가금액 (샷·시럽·펄, 개당) */
+  additionalWon: number
   imageSrc: string
   quantity: number
 }
@@ -175,7 +176,7 @@ export function EasyCartBar({
                     <img src={plusIcon} alt="" width={51} height={51} />
                   </button>
                   <span className="easy-cart-bar__line-price">
-                    {(item.unitPriceWon * item.quantity).toLocaleString('ko-KR')}원
+                    {((item.unitPriceWon + item.additionalWon) * item.quantity).toLocaleString('ko-KR')}원
                   </span>
                   <button
                     type="button"

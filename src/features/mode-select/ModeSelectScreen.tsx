@@ -2,18 +2,17 @@ import { OutlineFrame } from '@/components/common'
 import './ModeSelectScreen.css'
 
 export type ModeSelectScreenProps = {
-  /** 처음으로 → 홈 */
   onGoHome?: () => void
-  /** 쉬운 모드 버튼 선택 시 */
   onSelectEasy?: () => void
-  /** 일반 모드 버튼 선택 시 */
   onSelectNormal?: () => void
+  onStaffCall?: () => void
 }
 
 export function ModeSelectScreen({
   onGoHome,
   onSelectEasy,
   onSelectNormal,
+  onStaffCall,
 }: ModeSelectScreenProps) {
   return (
     <div className="mode-select">
@@ -22,7 +21,7 @@ export function ModeSelectScreen({
         className="mode-select__back-frame"
         onHomeClick={onGoHome}
       />
-      <OutlineFrame variant="staff" className="mode-select__staff-frame" />
+      <OutlineFrame variant="staff" className="mode-select__staff-frame" onStaffCall={onStaffCall} />
 
       <main className="mode-select__main">
         <button

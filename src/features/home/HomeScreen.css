@@ -17,6 +17,11 @@
   right: 40px;
 }
 
+@keyframes banner-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 .home-screen__addimg {
   position: absolute;
   top: 108px;
@@ -25,6 +30,7 @@
   width: 1080px;
   height: 1344px;
   aspect-ratio: 45 / 56;
+  animation: banner-fade-in 0.6s ease;
 }
 
 /* 이미지 하단 + 108px, 스테이지 가로 가운데 */

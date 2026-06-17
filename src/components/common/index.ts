@@ -25,5 +25,6 @@ export {
   MenuCategoryTabs,
   type CoffeeDetailCategoryId,
   type MenuCategoryId,
+  type MenuCategorySelection,
   type MenuCategoryTabsProps,
 } from './MenuCategoryTabs'

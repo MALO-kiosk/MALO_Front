@@ -124,6 +124,15 @@
   font-weight: 400;
 }
 
+.common-option__temp-btn--disabled {
+  border: 2px solid #d0d0d0;
+  background: #f0f0f0;
+  color: #b0b0b0;
+  font-size: 35px;
+  font-weight: 400;
+  cursor: not-allowed;
+}
+
 .common-option__temp-btn:focus-visible {
   outline: 2px solid #4880ee;
   outline-offset: 3px;

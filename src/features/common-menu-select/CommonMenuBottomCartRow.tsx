@@ -17,7 +17,7 @@ export function CommonMenuBottomCartRow({
   onDecrement,
   onRemoveLine,
 }: CommonMenuBottomCartRowProps) {
-  const lineTotalWon = item.unitPriceWon * item.quantity
+  const lineTotalWon = (item.unitPriceWon + item.additionalWon) * item.quantity
 
   return (
     <div

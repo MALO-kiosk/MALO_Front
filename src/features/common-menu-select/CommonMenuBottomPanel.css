@@ -10,15 +10,29 @@
   z-index: 2;
 }
 
-/* 패널 상단에서 95px — 1013×1 #656666 */
-.common-menu-bottom-panel__rule {
+/* 항목 스크롤 영역 — 패널 상단부터 시작 */
+.common-menu-bottom-panel__items {
   position: absolute;
-  top: 95px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 각 아이템을 감싸는 래퍼 */
+.common-menu-bottom-panel__entry {
+  display: block;
+}
+
+/* 아이템 아래 구분선 — 메뉴 → 선 → 메뉴 → 선 순서 */
+.common-menu-bottom-panel__rule {
+  display: block;
   width: 1013px;
   height: 0;
-  margin: 0;
+  margin: 0 auto;
   border: none;
   border-top: 1px solid #656666;
 }
