@@ -188,19 +188,41 @@ function stripOrderIntent(transcript: string): string {
 
 function extractQuantity(transcript: string): number {
   const norm = normalize(transcript)
+  // 복합 표현 먼저(길수록 우선), 그 뒤 단독 수사
   const map: Array<[string, number]> = [
-    ['다섯개', 5], ['다섯잔', 5], ['오개', 5],
-    ['네개', 4], ['네잔', 4], ['사개', 4],
-    ['세개', 3], ['세잔', 3], ['삼개', 3],
-    ['두개', 2], ['두잔', 2], ['이개', 2],
-    ['한개', 1], ['한잔', 1], ['하나', 1],
+    ['다섯개', 5], ['다섯잔', 5], ['다섯컵', 5], ['오개', 5],
+    ['네개',   4], ['네잔',   4], ['네컵',   4], ['사개', 4],
+    ['세개',   3], ['세잔',   3], ['세컵',   3], ['삼개', 3],
+    ['두개',   2], ['두잔',   2], ['두컵',   2], ['이개', 2],
+    ['한개',   1], ['한잔',   1], ['한컵',   1], ['하나', 1],
+    // 단독 수사(짧으므로 복합 표현 이후에 검사)
+    ['다섯', 5], ['넷', 4], ['셋', 3], ['둘', 2],
   ]
   for (const [word, n] of map) {
     if (norm.includes(normalize(word))) return n
   }
-  const m = transcript.match(/(\d+)\s*(?:개|잔)/)
-  if (m) return Math.min(10, parseInt(m[1]!, 10))
+  const m = transcript.match(/(\d+)\s*(?:개|잔|컵|병)?/)
+  if (m && m[1]) return Math.min(10, parseInt(m[1], 10))
   return 1
+}
+
+/**
+ * STT 결과에서 전화번호를 추출한다.
+ * - 한글 숫자(일이삼…, 영/공) → 아라비아 숫자 변환
+ * - 하이픈·공백 제거
+ * - 11자리 → 그대로, 8자리 → 앞에 "010" 자동 추가
+ * - 그 외 → null
+ */
+function parsePhoneNumber(transcript: string): string | null {
+  const korMap: Record<string, string> = {
+    영: '0', 공: '0', 일: '1', 이: '2', 삼: '3', 사: '4',
+    오: '5', 육: '6', 칠: '7', 팔: '8', 구: '9',
+  }
+  const converted = [...transcript].map((ch) => korMap[ch] ?? ch).join('')
+  const digits = converted.replace(/[^0-9]/g, '')
+  if (digits.length === 11) return digits
+  if (digits.length === 8)  return '010' + digits
+  return null
 }
 
 function extractKeyword(transcript: string): string {
@@ -577,22 +599,37 @@ function matchTranscript(
     }
 
     case 'STEP6_STAMP': {
+      // 건너뛰기 명령
       if (matchesAny(transcript, voiceSynonyms.stamp.skip)) {
         return { aiResponse: '스탬프 적립을 건너뜁니다.', action: { type: 'SET_STAMP', payload: { earn: false } } }
       }
-      const digits = transcript.replace(/[^0-9]/g, '')
-      if (digits.length >= 10) {
-        return { aiResponse: '스탬프를 적립하겠습니다.', action: { type: 'SET_STAMP', payload: { earn: true, phone: digits } } }
+      // 완료/다음 명령 (적립 외부 완료 후 다음 단계로)
+      if (matchesAny(transcript, voiceSynonyms.stamp.done)) {
+        return { aiResponse: '다음 단계로 이동합니다.', action: { type: 'SET_STAMP', payload: { earn: false } } }
+      }
+      // 전화번호 인식 — 한글 숫자 포함, 8자리 → 010 자동 추가
+      const phone = parsePhoneNumber(transcript)
+      if (phone) {
+        return { aiResponse: '스탬프를 적립하겠습니다.', action: { type: 'SET_STAMP', payload: { earn: true, phone } } }
       }
       return null
     }
 
     case 'STEP7_RECEIPT': {
+      // 부정 표현 먼저 ("아니" 가 "아니요"에 포함되므로 no를 먼저 검사)
       if (matchesAny(transcript, voiceSynonyms.receipt.no)) {
         return { aiResponse: '영수증을 출력하지 않겠습니다.', action: { type: 'SET_RECEIPT', payload: { receipt: false } } }
       }
       if (matchesAny(transcript, voiceSynonyms.receipt.yes)) {
         return { aiResponse: '영수증을 출력하겠습니다.', action: { type: 'SET_RECEIPT', payload: { receipt: true } } }
+      }
+      return null
+    }
+
+    case 'STEP8_COMPLETE': {
+      // 주문 완료 화면 — 종료 명령 시 초기 화면으로 이동
+      if (matchesAny(transcript, voiceSynonyms.completion.exit)) {
+        return { aiResponse: '처음 화면으로 돌아갑니다.', action: { type: 'GO_HOME', payload: {} } }
       }
       return null
     }
