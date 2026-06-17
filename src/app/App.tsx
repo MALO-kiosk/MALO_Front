@@ -396,7 +396,6 @@ export default function App() {
     onEvent: handleVoiceEvent,
     onListeningChange: setIsListening,
     onTranscriptChange: setCurrentTranscript,
-    menuProducts: liveMenuProducts,
   })
 
   // ── 상품 선택 처리 ─────────────────────────────────────────────────────
