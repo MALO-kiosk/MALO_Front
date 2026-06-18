@@ -520,11 +520,11 @@ function matchTranscript(
       if (matchesAny(transcript, voiceSynonyms.cup.personal)) {
         return { aiResponse: '개인컵으로 설정했습니다.', action: { type: 'SELECT_CUP', payload: { cup: 'personal' } } }
       }
-      if (matchesAny(transcript, co.sweetness.more)) {
-        return { aiResponse: '더 달게 설정했습니다.', action: { type: 'SET_SWEETNESS', payload: { sweetness: 'more' } } }
-      }
       if (matchesAny(transcript, co.sweetness.less)) {
         return { aiResponse: '덜 달게 설정했습니다.', action: { type: 'SET_SWEETNESS', payload: { sweetness: 'less' } } }
+      }
+      if (matchesAny(transcript, co.sweetness.more)) {
+        return { aiResponse: '더 달게 설정했습니다.', action: { type: 'SET_SWEETNESS', payload: { sweetness: 'more' } } }
       }
       if (matchesAny(transcript, co.sweetness.normal)) {
         return { aiResponse: '보통 당도로 설정했습니다.', action: { type: 'SET_SWEETNESS', payload: { sweetness: 'normal' } } }
