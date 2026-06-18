@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   AISpeechDisplay,
   EasyCartBar,
@@ -17,6 +17,7 @@ import {
   type MenuProduct,
 } from '@/data/menuCatalog'
 import { useMenuCatalog } from '@/lib/useMenuCatalog'
+import { useEdgeScroll } from '@/hooks/useEdgeScroll'
 import './EasyMenuSelectScreen.css'
 
 const COLS = 3
@@ -44,6 +45,9 @@ export function EasyMenuSelectScreen({
   onOrder,
   aiMessage,
 }: EasyMenuSelectScreenProps) {
+  const gridRef = useRef<HTMLDivElement>(null)
+  useEdgeScroll(gridRef)
+
   const { products } = useMenuCatalog()
   const [categorySelection, setCategorySelection] =
     useState<MenuCategorySelection>({
@@ -93,7 +97,7 @@ export function EasyMenuSelectScreen({
           onSelectionChange={setCategorySelection}
         />
       </TopWhitePanel>
-      <div className="easy-menu-select__menu-grid">
+      <div className="easy-menu-select__menu-grid" ref={gridRef}>
         {productRows.map((row, rowIndex) => (
           <div key={rowIndex} className="easy-menu-select__menu-row">
             {row.map((product) => (

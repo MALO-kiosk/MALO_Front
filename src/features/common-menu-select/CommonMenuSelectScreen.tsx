@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   MenuCategoryTabs,
   OrderTotalBar,
@@ -17,6 +17,7 @@ import { useMenuCatalog } from '@/lib/useMenuCatalog'
 import { CommonMenuBottomCartRow } from './CommonMenuBottomCartRow'
 import { CommonMenuBottomPanel } from './CommonMenuBottomPanel'
 import { CommonMenuProductCard } from './CommonMenuProductCard'
+import { useEdgeScroll } from '@/hooks/useEdgeScroll'
 import './CommonMenuSelectScreen.css'
 
 const COLS = 4
@@ -43,6 +44,9 @@ export function CommonMenuSelectScreen({
   onSelectProduct,
   onOrder,
 }: CommonMenuSelectScreenProps) {
+  const gridRef = useRef<HTMLDivElement>(null)
+  useEdgeScroll(gridRef)
+
   const { products } = useMenuCatalog()
   const [categorySelection, setCategorySelection] =
     useState<MenuCategorySelection>({
@@ -95,7 +99,7 @@ export function CommonMenuSelectScreen({
           onSelectionChange={setCategorySelection}
         />
       </TopWhitePanel>
-      <div className="common-menu-select__product-grid">
+      <div className="common-menu-select__product-grid" ref={gridRef}>
         {productRows.map((row, rowIndex) => (
           <div key={rowIndex} className="common-menu-select__product-row">
             {row.map((product) => (

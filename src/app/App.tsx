@@ -13,6 +13,7 @@ import {
 import { isDesertProduct, MENU_CATALOG, type MenuProduct } from '@/data/menuCatalog'
 import { saveOrder, saveStampAndGetCount, type PlaceType } from '@/lib/orderService'
 import { GREETING_MESSAGE, speak, useVoiceAI, type VoiceAIEvent, type VoiceAIStep } from '@/hooks/useVoiceAI'
+import { useIdleTimeout } from '@/hooks/useIdleTimeout'
 import { CommonOptionScreen } from '@/features/common-option'
 import { CommonMenuSelectScreen } from '@/features/common-menu-select'
 import { EasyMenuSelectScreen } from '@/features/easy-menu-select'
@@ -197,6 +198,9 @@ export default function App() {
     currentOrderId.current = null
     setPage('home')
   }, [])
+
+  // home·admin 화면이 아닐 때만 유휴 타이머 활성화
+  useIdleTimeout(goHome, page !== 'home' && page !== 'admin')
 
   const callStaff = useCallback(() => {
     alert('직원을 호출했습니다.\n잠시만 기다려 주세요.')
