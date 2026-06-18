@@ -26,11 +26,12 @@ const PRIMARY_CATEGORY_MAP: Record<string, MenuCategoryId> = {
 const SECONDARY_CATEGORY_MAP: Record<string, CoffeeDetailCategoryId> = {
   '커피': 'coffee',
   '디카페인 커피': 'decaf',
+  '디카페인': 'decaf',
   '음료': 'drink',
   '티/라떼': 'tea',
 }
 
-const COFFEE_DETAIL_KEYS = new Set(['커피', '디카페인 커피', '음료', '티/라떼'])
+const COFFEE_DETAIL_KEYS = new Set(['커피', '디카페인 커피', '디카페인', '음료', '티/라떼'])
 
 function resolveSecondMenuCategory(primary: string, secondaryRaw: string | null): MenuCategoryId {
   if (primary === '커피/음료') return 'coffee'
