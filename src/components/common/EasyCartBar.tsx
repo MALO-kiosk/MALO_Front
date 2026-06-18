@@ -9,6 +9,7 @@ import type { CSSProperties } from 'react'
 import minusIcon from '@/assets/icons/minus_icon.svg'
 import plusIcon from '@/assets/icons/plus_icon.svg'
 import xIcon from '@/assets/icons/x_icon.svg'
+import { useDragScroll } from '@/hooks/useDragScroll'
 import './EasyCartBar.css'
 
 const TRACK_H = 212
@@ -48,6 +49,8 @@ export function EasyCartBar({
   const rootClass = className ? `easy-cart-bar ${className}` : 'easy-cart-bar'
 
   const bodyRef = useRef<HTMLDivElement>(null)
+  useDragScroll(bodyRef)
+
   const [thumbY, setThumbY] = useState(0)
   const [scrollable, setScrollable] = useState(false)
   const dragging = useRef(false)
