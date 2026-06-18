@@ -4,10 +4,11 @@ import OrderProcess from '../../components/common/Orderprocess';
 type StampProgressProps = {
   currentCount: number
   totalCount: number
+  gotCoupon?: boolean
   onNext?: () => void
 }
 
-export default function StampProgress({ currentCount, totalCount, onNext }: StampProgressProps) {
+export default function StampProgress({ currentCount, totalCount, gotCoupon = false, onNext }: StampProgressProps) {
   const progressWidth = (currentCount / totalCount) * 100;
   return (
     <div className="complete-page stamp-progress-view" style={{ position: 'relative', width: '1080px', height: '1920px' }}>
@@ -26,9 +27,13 @@ export default function StampProgress({ currentCount, totalCount, onNext }: Stam
         zIndex: 10001 
       }}>
         <div className="stamp-progress-card-inner">
-          <h1 className="stamp-progress-title">스탬프 적립</h1>
-          <p className="stamp-progress-main">포인트 1개가 적립되었습니다!</p>
-          <p className="stamp-progress-sub">포인트 10개 적립시 아이스아메리카노 쿠폰 증정</p>
+          <h1 className="stamp-progress-title">
+            {gotCoupon ? '쿠폰 발급!' : '스탬프 적립'}
+          </h1>
+          <p className="stamp-progress-main">
+            {gotCoupon ? '스탬프 10개 달성! 쿠폰이 발급되었습니다.' : '포인트 1개가 적립되었습니다!'}
+          </p>
+          <p className="stamp-progress-sub">포인트 10개 적립시 음료 쿠폰 증정</p>
           <div className="stamp-progress-container">
             <div className="stamp-progress-bar">
               <div className="stamp-progress-fill" style={{ width: `${progressWidth}%` }}>

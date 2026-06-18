@@ -7,7 +7,7 @@ import pay3Icon from '../../assets/icons/pay3.svg';
 import pay4Icon from '../../assets/icons/pay4.svg';
 import pay5Icon from '../../assets/icons/pay5.svg';
 
-export default function PaymentSelect({ onNext, onPrev }: any) {
+export default function PaymentSelect({ onNext, onPrev, onCouponPay }: any) {
   return (
     <div className="complete-page payment-select-page">
       <OrderProcess
@@ -25,7 +25,7 @@ export default function PaymentSelect({ onNext, onPrev }: any) {
             <img src={payIcon} alt="pay" className="small-pay-icon" />
             <span className="small-pay-text">모바일 페이</span>
           </button>
-          <button className="small-pay-item" onClick={onNext}>
+          <button className="small-pay-item" onClick={onCouponPay ?? onNext}>
             <img src={pay2Icon} alt="coupon" className="small-pay-icon" />
             <span className="small-pay-text">쿠폰사용</span>
           </button>

@@ -12,7 +12,7 @@ import {
   orderLineFromProduct,
 } from '@/lib/orderLineDraft'
 import { isDesertProduct, MENU_CATALOG, type MenuProduct } from '@/data/menuCatalog'
-import { saveOrder, saveStampAndGetCount, type PlaceType } from '@/lib/orderService'
+import { saveOrder, saveStampAndGetCount, checkAndUseCoupon, type PlaceType } from '@/lib/orderService'
 import { GREETING_MESSAGE, speak, useVoiceAI, type VoiceAIEvent, type VoiceAIStep } from '@/hooks/useVoiceAI'
 import { useIdleTimeout } from '@/hooks/useIdleTimeout'
 import { CommonOptionScreen } from '@/features/common-option'
@@ -28,6 +28,7 @@ import OrderComplete_receipt from '@/features/home/OrderComplete_receipt'
 import PaymentSelect from '@/features/home/PaymentSelect'
 import StampInput from '@/features/home/StampInput'
 import StampProgress from '@/features/home/StampProgress'
+import CouponInput from '@/features/home/CouponInput'
 import { HomeScreen } from '@/features/home'
 import { ModeSelectScreen } from '@/features/mode-select'
 import { BannerAdminPage } from '@/features/admin/BannerAdminPage'
@@ -42,6 +43,7 @@ type AppPage =
   | 'easy-custom-option'
   | 'order-confirm-2'
   | 'payment'
+  | 'coupon-input'
   | 'stamp-input'
   | 'stamp'
   | 'order-complete-receipt'
@@ -141,6 +143,7 @@ export default function App() {
   const [placeType, setPlaceType] = useState<PlaceType>('dine_in')
   const currentOrderId = useRef<string | null>(null)
   const [stampCount, setStampCount] = useState(0)
+  const [gotCoupon, setGotCoupon] = useState(false)
 
   // ── 쉬운 모드 ──────────────────────────────────────────────────────────
   const [easyOrderLine, setEasyOrderLine] = useState<OrderLineDraft>(
@@ -228,7 +231,7 @@ export default function App() {
     }
   }, [])
 
-  // 결제 완료 → 주문 DB 저장 후 stamp-input으로 이동 (develop 유지: placeType + orderConfirmSource)
+  // 결제 완료 → 주문 DB 저장 후 stamp-input으로 이동
   const handlePaymentDone = useCallback(async () => {
     const lines =
       orderConfirmSource.current === 'order-confirm-2'
@@ -239,12 +242,37 @@ export default function App() {
     setPage('stamp-input')
   }, [placeType, easyCartDrafts, commonCartDrafts])
 
+  // 쿠폰 결제 시작 → 주문 DB 저장 후 coupon-input으로 이동
+  const handleCouponPayStart = useCallback(async () => {
+    const lines =
+      orderConfirmSource.current === 'order-confirm-2'
+        ? easyCartDrafts
+        : commonCartDrafts
+    const orderId = await saveOrder(placeType, lines)
+    currentOrderId.current = orderId
+    setPage('coupon-input')
+  }, [placeType, easyCartDrafts, commonCartDrafts])
+
+  // 쿠폰 입력 완료 → DB 확인 후 처리
+  const handleCouponConfirm = useCallback(async (phoneNumber: string) => {
+    const valid = await checkAndUseCoupon(phoneNumber)
+    if (!valid) {
+      alert('쿠폰이 없습니다.')
+      setPage('payment')
+      return
+    }
+    alert('쿠폰으로 결제가 완료되었습니다!')
+    setPage('order-complete-receipt')
+  }, [])
+
   // 스탬프 적립 → DB upsert 후 stamp 화면으로
   const handleStampSubmit = useCallback(async (phoneNumber: string) => {
     const orderId = currentOrderId.current
     if (!orderId) { setPage('stamp'); return }
-    const count = await saveStampAndGetCount(orderId, phoneNumber)
-    setStampCount(count)
+    const result = await saveStampAndGetCount(orderId, phoneNumber)
+    // 쿠폰 발급 시 프로그레스바는 10/10 으로 표시
+    setStampCount(result.gotCoupon ? 10 : result.count)
+    setGotCoupon(result.gotCoupon)
     setPage('stamp')
   }, [])
 
@@ -627,6 +655,17 @@ export default function App() {
             <PaymentSelect
               onNext={handlePaymentDone}
               onPrev={() => setPage(orderConfirmSource.current)}
+              onCouponPay={handleCouponPayStart}
+            />
+          </OrderFlowShell>
+        )
+
+      case 'coupon-input':
+        return (
+          <OrderFlowShell onHome={goHome} onStaffCall={callStaff} aiMessage={displayMessage}>
+            <CouponInput
+              onConfirm={handleCouponConfirm}
+              onCancel={() => setPage('payment')}
             />
           </OrderFlowShell>
         )
@@ -647,6 +686,7 @@ export default function App() {
             <StampProgress
               currentCount={stampCount}
               totalCount={10}
+              gotCoupon={gotCoupon}
               onNext={() => setPage('order-complete-receipt')}
             />
           </OrderFlowShell>
