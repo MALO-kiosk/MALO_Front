@@ -19,29 +19,25 @@ export default function PaymentSelect({ onNext, onPrev }: any) {
       <div className="complete-card">
         <h1 className="complete-title">결제 수단을 선택해 주세요!</h1>
 
-        {/* 모바일 페이 버튼 */}
-        <button className="mobile-pay-container" onClick={onNext}>
-          <img src={payIcon} alt="pay" className="pay-icon-select" />
-          <span className="mobile-pay-text">모바일 페이</span>
-        </button>
-
-        {/* 쿠폰사용 버튼 */}
-        <button className="coupon-pay-container" onClick={onNext}>
-          <img src={pay2Icon} alt="coupon" className="pay2-icon-select" />
-          <span className="coupon-pay-text">쿠폰사용</span>
-        </button>
-
-        {/* 할인 수단 버튼 */}
-        <button className="discount-pay-container" onClick={onNext}>
-          <img src={pay3Icon} alt="discount" className="pay3-icon-select" />
-          <span className="discount-pay-text">할인 수단</span>
-        </button>
-
-        {/* 앱 카드 버튼 */}
-        <button className="app-card-container" onClick={onNext}>
-          <img src={pay4Icon} alt="app card" className="pay4-icon-select" />
-          <span className="app-card-text">앱 카드</span>
-        </button>
+        {/* 소형 결제 수단 그리드 (2x2) */}
+        <div className="small-pay-grid">
+          <button className="small-pay-item" onClick={onNext}>
+            <img src={payIcon} alt="pay" className="small-pay-icon" />
+            <span className="small-pay-text">모바일 페이</span>
+          </button>
+          <button className="small-pay-item" onClick={onNext}>
+            <img src={pay2Icon} alt="coupon" className="small-pay-icon" />
+            <span className="small-pay-text">쿠폰사용</span>
+          </button>
+          <button className="small-pay-item" onClick={onNext}>
+            <img src={pay3Icon} alt="discount" className="small-pay-icon" />
+            <span className="small-pay-text">할인 수단</span>
+          </button>
+          <button className="small-pay-item" onClick={onNext}>
+            <img src={pay4Icon} alt="app card" className="small-pay-icon" />
+            <span className="small-pay-text">앱 카드</span>
+          </button>
+        </div>
 
         {/* 신용카드 버튼 */}
         <button className="credit-card-container" onClick={onNext}>
