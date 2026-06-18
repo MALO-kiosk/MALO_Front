@@ -8,6 +8,7 @@ import {
   createDefaultOrderLineDraft,
   enrichOrderLineFromCatalog,
   orderLineDraftToCartItem,
+  orderLineDraftsMatch,
   orderLineFromProduct,
 } from '@/lib/orderLineDraft'
 import { isDesertProduct, MENU_CATALOG, type MenuProduct } from '@/data/menuCatalog'
@@ -90,7 +91,7 @@ function mergeIntoDrafts(
   prev: OrderLineDraft[],
   draft: OrderLineDraft,
 ): OrderLineDraft[] {
-  const i = prev.findIndex((x) => x.id === draft.id)
+  const i = prev.findIndex((x) => orderLineDraftsMatch(x, draft))
   if (i === -1) return [...prev, draft]
   const next = [...prev]
   next[i] = { ...next[i]!, quantity: next[i]!.quantity + draft.quantity }
@@ -464,21 +465,21 @@ export default function App() {
             onIncrementCart={(id) =>
               setEasyCartDrafts((prev) =>
                 prev.map((x) =>
-                  x.id === id ? { ...x, quantity: x.quantity + 1 } : x,
+                  x.lineId === id ? { ...x, quantity: x.quantity + 1 } : x,
                 ),
               )
             }
             onDecrementCart={(id) =>
               setEasyCartDrafts((prev) =>
                 prev.flatMap((x) => {
-                  if (x.id !== id) return [x]
+                  if (x.lineId !== id) return [x]
                   if (x.quantity <= 1) return []
                   return [{ ...x, quantity: x.quantity - 1 }]
                 }),
               )
             }
             onRemoveFromCart={(id) =>
-              setEasyCartDrafts((prev) => prev.filter((x) => x.id !== id))
+              setEasyCartDrafts((prev) => prev.filter((x) => x.lineId !== id))
             }
             onSelectProduct={handleEasySelectProduct}
             onOrder={() => {
@@ -549,21 +550,21 @@ export default function App() {
             onIncrementCart={(id) =>
               setCommonCartDrafts((prev) =>
                 prev.map((x) =>
-                  x.id === id ? { ...x, quantity: x.quantity + 1 } : x,
+                  x.lineId === id ? { ...x, quantity: x.quantity + 1 } : x,
                 ),
               )
             }
             onDecrementCart={(id) =>
               setCommonCartDrafts((prev) =>
                 prev.flatMap((x) => {
-                  if (x.id !== id) return [x]
+                  if (x.lineId !== id) return [x]
                   if (x.quantity <= 1) return []
                   return [{ ...x, quantity: x.quantity - 1 }]
                 }),
               )
             }
             onRemoveFromCart={(id) =>
-              setCommonCartDrafts((prev) => prev.filter((x) => x.id !== id))
+              setCommonCartDrafts((prev) => prev.filter((x) => x.lineId !== id))
             }
             onSelectProduct={handleCommonSelectProduct}
             onOrder={() => {

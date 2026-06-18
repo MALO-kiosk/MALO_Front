@@ -9,7 +9,10 @@ export type CupChoice = 'mug' | 'personal'
 export type SweetnessChoice = 'more' | 'normal' | 'less'
 
 export type OrderLineDraft = {
+  /** 메뉴 상품 ID (e.g. 'strawberry-matcha') */
   id: string
+  /** 장바구니 줄 고유 ID — 같은 메뉴를 다른 옵션으로 담으면 서로 다른 값 */
+  lineId: string
   name: string
   imageSrc: string
   unitPriceWon: number
@@ -35,9 +38,15 @@ const SWEETNESS_LABEL: Record<SweetnessChoice, string> = {
   less: '덜 달게',
 }
 
+let _lineIdSeq = 0
+function newLineId(): string {
+  return `line-${Date.now()}-${++_lineIdSeq}`
+}
+
 export function createDefaultOrderLineDraft(): OrderLineDraft {
   return {
     id: 'strawberry-matcha',
+    lineId: newLineId(),
     name: '스트로베리말차',
     imageSrc: menuStrawberryImg,
     unitPriceWon: 3900,
@@ -71,6 +80,7 @@ export function orderLineFromProduct(product: MenuProduct): OrderLineDraft {
   return {
     ...createDefaultOrderLineDraft(),
     id: product.id,
+    lineId: newLineId(),
     name: product.name,
     imageSrc: product.imageSrc,
     unitPriceWon: product.unitPriceWon,
@@ -82,13 +92,29 @@ export function orderLineFromProduct(product: MenuProduct): OrderLineDraft {
 
 export function orderLineDraftToCartItem(line: OrderLineDraft): EasyCartLineItem {
   return {
-    id: line.id,
+    id: line.lineId,
     name: line.name,
     unitPriceWon: line.unitPriceWon,
     additionalWon: computeAdditionalWon(line),
     imageSrc: line.imageSrc,
     quantity: line.quantity,
   }
+}
+
+/** 두 드래프트가 같은 메뉴 + 같은 옵션이면 true (수량 제외) */
+export function orderLineDraftsMatch(a: OrderLineDraft, b: OrderLineDraft): boolean {
+  return (
+    a.id === b.id &&
+    a.temp === b.temp &&
+    a.size === b.size &&
+    a.cup === b.cup &&
+    a.sweetness === b.sweetness &&
+    a.shotQty === b.shotQty &&
+    a.syrupQty === b.syrupQty &&
+    a.pearlQtys[0] === b.pearlQtys[0] &&
+    a.pearlQtys[1] === b.pearlQtys[1] &&
+    a.pearlQtys[2] === b.pearlQtys[2]
+  )
 }
 
 /** 메뉴 카탈로그 기준으로 이름·이미지·단가 동기화 */
