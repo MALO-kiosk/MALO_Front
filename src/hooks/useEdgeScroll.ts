@@ -8,8 +8,8 @@ const TRIGGER_DELAY_MS = 500         // 스크롤 시작까지의 대기 시간 
 
 export function useEdgeScroll(scrollRef: RefObject<HTMLElement | null>) {
   useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
+    if (!scrollRef.current) return
+    const el: HTMLElement = scrollRef.current
 
     let currentZone: 'top' | 'bottom' | null = null
     let triggerTimer: ReturnType<typeof setTimeout> | null = null
@@ -82,7 +82,6 @@ export function useEdgeScroll(scrollRef: RefObject<HTMLElement | null>) {
     }
 
     function onMouseMove(e: MouseEvent) {
-      if (!el) return
       if (el.scrollHeight <= el.clientHeight) {
         leaveZone()
         return

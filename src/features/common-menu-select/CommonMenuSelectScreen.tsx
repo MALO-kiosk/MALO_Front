@@ -17,7 +17,7 @@ import { useMenuCatalog } from '@/lib/useMenuCatalog'
 import { CommonMenuBottomCartRow } from './CommonMenuBottomCartRow'
 import { CommonMenuBottomPanel } from './CommonMenuBottomPanel'
 import { CommonMenuProductCard } from './CommonMenuProductCard'
-import { useEdgeScroll } from '@/hooks/useEdgeScroll'
+import { useDragScroll } from '@/hooks/useDragScroll'
 import './CommonMenuSelectScreen.css'
 
 const COLS = 4
@@ -45,7 +45,7 @@ export function CommonMenuSelectScreen({
   onOrder,
 }: CommonMenuSelectScreenProps) {
   const gridRef = useRef<HTMLDivElement>(null)
-  useEdgeScroll(gridRef)
+  useDragScroll(gridRef)
 
   const { products } = useMenuCatalog()
   const [categorySelection, setCategorySelection] =

@@ -17,7 +17,7 @@ import {
   type MenuProduct,
 } from '@/data/menuCatalog'
 import { useMenuCatalog } from '@/lib/useMenuCatalog'
-import { useEdgeScroll } from '@/hooks/useEdgeScroll'
+import { useDragScroll } from '@/hooks/useDragScroll'
 import './EasyMenuSelectScreen.css'
 
 const COLS = 3
@@ -46,7 +46,7 @@ export function EasyMenuSelectScreen({
   aiMessage,
 }: EasyMenuSelectScreenProps) {
   const gridRef = useRef<HTMLDivElement>(null)
-  useEdgeScroll(gridRef)
+  useDragScroll(gridRef)
 
   const { products } = useMenuCatalog()
   const [categorySelection, setCategorySelection] =
