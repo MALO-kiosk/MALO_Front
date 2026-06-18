@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { TopWhitePanel } from '@/components/common';
 import '../../styles/StampInput.css';
 import OrderProcess from '../../components/common/Orderprocess';
 import OrderComplete_receipt from './OrderComplete_receipt';
 import OrderComplete_alarm from './OrderComplete_alarm';
 
 type StampInputProps = {
-  onNext?: () => void;
+  onNext?: (phoneNumber: string) => void;
   onSkip?: () => void;
 };
 
@@ -87,7 +88,7 @@ export default function StampInput({ onNext, onSkip }: StampInputProps) {
           <button type="button" className="no-btn" onClick={handleSkip}>
             적립안함
           </button>
-          <button type="button" className="yes-btn" onClick={onNext}>
+          <button type="button" className="yes-btn" onClick={() => onNext?.(phoneNumber)}>
             입력 완료
           </button>
         </div>

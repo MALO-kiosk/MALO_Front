@@ -82,6 +82,7 @@ export function useEdgeScroll(scrollRef: RefObject<HTMLElement | null>) {
     }
 
     function onMouseMove(e: MouseEvent) {
+      if (!el) return
       if (el.scrollHeight <= el.clientHeight) {
         leaveZone()
         return
