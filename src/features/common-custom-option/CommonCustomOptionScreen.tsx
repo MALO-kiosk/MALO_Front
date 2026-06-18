@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { useOptionCatalog } from '@/lib/useOptionCatalog'
 import {
   EasyCartBarTotal,
   EasyOrderActionBar,
@@ -12,14 +13,6 @@ import type { OrderLineDraft } from '@/lib/orderLineDraft'
 import { computeAdditionalWon } from '@/lib/orderLineDraft'
 import '@/features/easy-option/EasyOptionScreen.css'
 import './CommonCustomOptionScreen.css'
-
-const PEARL_ROW_LABELS = [
-  '타피오카펄 + 500원',
-  '화이트펄 + 500원',
-  '알로에 + 500원',
-] as const
-
-const PEARL_ROW_ARIA = ['타피오카 펄', '화이트 펄', '알로에'] as const
 
 export type CommonCustomOptionScreenProps = {
   orderLine: OrderLineDraft
@@ -40,6 +33,7 @@ export function CommonCustomOptionScreen({
   onAddMenu,
   onStaffCall,
 }: CommonCustomOptionScreenProps) {
+  const { catalog } = useOptionCatalog()
   const { shotQty, syrupQty, pearlQtys, sweetness, temp, size } = orderLine
 
   const setPearlQtyRow = (row: number, next: (q: number) => number) => {
@@ -62,7 +56,9 @@ export function CommonCustomOptionScreen({
       </TopWhitePanel>
 
       <p className="common-custom-option__shot-label">샷</p>
-      <p className="common-custom-option__shot-addon">샷 추가 +500원</p>
+      <p className="common-custom-option__shot-addon">
+        {catalog.shot?.name ?? '샷 추가'} +{catalog.shot?.price ?? 500}원
+      </p>
 
       <div className="common-custom-option__shot-qty" aria-label="샷 수량">
         <button
@@ -87,12 +83,14 @@ export function CommonCustomOptionScreen({
       </div>
 
       <p className="common-custom-option__syrup-label">시럽</p>
-      <p className="common-custom-option__syrup-addon">바닐라 시럽 +500원</p>
-      <div className="common-custom-option__syrup-qty" aria-label="바닐라 시럽 수량">
+      <p className="common-custom-option__syrup-addon">
+        {catalog.syrup?.name ?? '시럽 추가'} +{catalog.syrup?.price ?? 500}원
+      </p>
+      <div className="common-custom-option__syrup-qty" aria-label="시럽 수량">
         <button
           type="button"
           className="common-custom-option__shot-qty-btn"
-          aria-label="바닐라 시럽 한 스푼 빼기"
+          aria-label="시럽 한 스푼 빼기"
           onClick={() =>
             onOrderLineChange({ syrupQty: Math.max(0, syrupQty - 1) })
           }
@@ -103,7 +101,7 @@ export function CommonCustomOptionScreen({
         <button
           type="button"
           className="common-custom-option__shot-qty-btn"
-          aria-label="바닐라 시럽 한 스푼 더하기"
+          aria-label="시럽 한 스푼 더하기"
           onClick={() => onOrderLineChange({ syrupQty: syrupQty + 1 })}
         >
           <img src={plusIcon} alt="" width={51} height={51} />
@@ -143,21 +141,19 @@ export function CommonCustomOptionScreen({
       </button>
 
       <p className="common-custom-option__pearl-label">펄</p>
-      {[0, 1, 2].map((row) => (
-        <Fragment key={row}>
-          <p
-            className={`common-custom-option__pearl-addon common-custom-option__pearl-addon--r${row}`}
-          >
-            {PEARL_ROW_LABELS[row]}
+      {catalog.pearl.map((pearlItem, row) => (
+        <Fragment key={pearlItem.id}>
+          <p className={`common-custom-option__pearl-addon common-custom-option__pearl-addon--r${row}`}>
+            {pearlItem.name} +{pearlItem.price}원
           </p>
           <div
             className={`common-custom-option__pearl-qty common-custom-option__pearl-qty--r${row}`}
-            aria-label={`${PEARL_ROW_ARIA[row]} 수량 ${row + 1}행`}
+            aria-label={`${pearlItem.name} 수량`}
           >
             <button
               type="button"
               className="common-custom-option__pearl-qty-btn"
-              aria-label={`${PEARL_ROW_ARIA[row]} ${row + 1}행 한 개 빼기`}
+              aria-label={`${pearlItem.name} 한 개 빼기`}
               onClick={() => setPearlQtyRow(row, (q) => Math.max(0, q - 1))}
             >
               <img src={minusIcon} alt="" width={54} height={54} />
@@ -168,7 +164,7 @@ export function CommonCustomOptionScreen({
             <button
               type="button"
               className="common-custom-option__pearl-qty-btn"
-              aria-label={`${PEARL_ROW_ARIA[row]} ${row + 1}행 한 개 더하기`}
+              aria-label={`${pearlItem.name} 한 개 더하기`}
               onClick={() => setPearlQtyRow(row, (q) => q + 1)}
             >
               <img src={plusIcon} alt="" width={51} height={51} />

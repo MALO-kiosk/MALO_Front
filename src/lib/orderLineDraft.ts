@@ -1,6 +1,7 @@
 import menuStrawberryImg from '@/assets/images/menu_StrawberryMatcha.png'
 import type { EasyCartLineItem } from '@/components/common'
 import { getMenuProduct, isDesertProduct, type MenuProduct } from '@/data/menuCatalog'
+import { getOptionCatalog } from '@/lib/useOptionCatalog'
 
 export type TempChoice = 'ice' | 'hot'
 export type SizeChoice = 'regular' | 'large'
@@ -107,8 +108,14 @@ export function orderLineDisplayName(line: OrderLineDraft): string {
 }
 
 export function computeAdditionalWon(line: OrderLineDraft): number {
-  const pearlSum = line.pearlQtys.reduce((a, b) => a + b, 0)
-  return (line.shotQty + line.syrupQty + pearlSum) * CUSTOM_OPTION_UNIT_WON
+  const catalog = getOptionCatalog()
+  const shotPrice  = catalog.shot?.price  ?? CUSTOM_OPTION_UNIT_WON
+  const syrupPrice = catalog.syrup?.price ?? CUSTOM_OPTION_UNIT_WON
+  const pearlTotal = line.pearlQtys.reduce(
+    (sum, qty, i) => sum + qty * (catalog.pearl[i]?.price ?? CUSTOM_OPTION_UNIT_WON),
+    0,
+  )
+  return line.shotQty * shotPrice + line.syrupQty * syrupPrice + pearlTotal
 }
 
 export function computeLineTotalWon(line: OrderLineDraft): number {
