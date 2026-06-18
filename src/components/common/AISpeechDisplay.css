@@ -13,13 +13,13 @@
 .ai-speech-display__bubble {
   display: flex;
   width: 790px;
-  height: 96px;
-  padding: 10px;
+  min-height: 96px;
+  padding: 18px 28px;
   justify-content: center;
   align-items: center;
   gap: 10px;
   box-sizing: border-box;
-  border-radius: 65px;
+  border-radius: 48px;
   background: rgba(255, 255, 255, 0.7);
   box-shadow: 0 0 4px 0 #4880ee;
   transition: box-shadow 0.3s;
@@ -41,8 +41,10 @@
   font-size: 38px;
   font-style: normal;
   font-weight: 400;
-  line-height: normal;
+  line-height: 1.4;
   text-align: center;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .ai-speech-display__person {
