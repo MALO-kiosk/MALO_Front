@@ -179,6 +179,7 @@ export function CommonCustomOptionScreen({
         menuSpec={cartSummarySpec(temp, size)}
         unitPriceWon={orderLine.unitPriceWon}
         initialQuantity={orderLine.quantity}
+        onQuantityChange={(qty) => onOrderLineChange({ quantity: qty })}
         additionalAmountWon={computeAdditionalWon(orderLine)}
       />
       <EasyOrderActionBar

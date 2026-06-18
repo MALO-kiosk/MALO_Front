@@ -16,6 +16,8 @@ export type EasyCartBarTotalProps = {
   unitPriceWon?: number
   /** 초기 수량 */
   initialQuantity?: number
+  /** 수량 변경 콜백 — 전달하면 부모 상태와 동기화 */
+  onQuantityChange?: (qty: number) => void
   /** 옵션 등 추가 금액(원) — 표시: +n원 */
   additionalAmountWon?: number
   className?: string
@@ -28,11 +30,17 @@ export function EasyCartBarTotal({
   menuSpec = 'ICE / R',
   unitPriceWon = 3900,
   initialQuantity = 1,
+  onQuantityChange,
   additionalAmountWon = 0,
   className,
   style,
 }: EasyCartBarTotalProps) {
   const [qty, setQty] = useState(initialQuantity)
+
+  const changeQty = (next: number) => {
+    setQty(next)
+    onQuantityChange?.(next)
+  }
 
   const imgUrl = imageSrc ?? defaultMenuImage
   const lineTotalWon = unitPriceWon * qty + additionalAmountWon
@@ -66,7 +74,7 @@ export function EasyCartBarTotal({
             type="button"
             className="easy-cart-bar-total__qty-btn"
             aria-label="한 개 빼기"
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
+            onClick={() => changeQty(Math.max(1, qty - 1))}
           >
             <img src={minusIcon} alt="" width={54} height={54} />
           </button>
@@ -75,7 +83,7 @@ export function EasyCartBarTotal({
             type="button"
             className="easy-cart-bar-total__qty-btn"
             aria-label="한 개 더하기"
-            onClick={() => setQty((q) => q + 1)}
+            onClick={() => changeQty(qty + 1)}
           >
             <img src={plusIcon} alt="" width={51} height={51} />
           </button>
